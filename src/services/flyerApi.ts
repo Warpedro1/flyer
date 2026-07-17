@@ -4,6 +4,8 @@ import type {
   ChatMessageOut,
   ChatSyncResponse,
   CheckInRequest,
+  CompleteOnboardingAnswers,
+  CompleteOnboardingResponse,
   DiscoverRequest,
   EventCreate,
   EventRead,
@@ -38,6 +40,20 @@ export async function getChatHistory(): Promise<ChatMessageOut[]> {
 
 export async function syncChat(): Promise<ChatSyncResponse> {
   const { data } = await apiClient.post<ChatSyncResponse>('/chat/sync');
+  return data;
+}
+
+export async function completeOnboarding(body: {
+  answers: CompleteOnboardingAnswers;
+}): Promise<CompleteOnboardingResponse> {
+  const { data } = await apiClient.post<CompleteOnboardingResponse>('/chat/complete-onboarding', body);
+  return data;
+}
+
+export async function validateOnboarding(body: {
+  answers: CompleteOnboardingAnswers;
+}): Promise<{ ok: boolean }> {
+  const { data } = await apiClient.post<{ ok: boolean }>('/chat/validate-onboarding', body);
   return data;
 }
 

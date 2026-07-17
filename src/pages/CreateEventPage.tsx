@@ -1,63 +1,143 @@
-import { Image as ImageIcon, Plus, Trash2, UploadCloud } from 'lucide-react';
+import { Plus, Trash2, UploadCloud } from 'lucide-react';
 import { type DragEvent, type FormEvent, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { useAuth } from '../hooks/useAuth.ts';
 import { useEffectiveGeo } from '../hooks/useEffectiveGeo.ts';
 import { createEvent } from '../services/flyerApi.ts';
+import { uploadEventMedia } from '../services/storage.ts';
 import type { EventMediaCreate, MediaType } from '../types/index.ts';
 import { formatApiError } from '../utils/apiError.ts';
+import { type GeocodeResult, geocodeAddress, reverseGeocode } from '../utils/geocode.ts';
+
+type MediaStatus = 'uploading' | 'done' | 'error';
 
 interface MediaEntry {
   key: string;
-  url: string;
+  name: string;
   type: MediaType;
-}
-
-function newMediaEntry(): MediaEntry {
-  return { key: crypto.randomUUID(), url: '', type: 'image' };
+  status: MediaStatus;
+  /** Caminho no bucket privado (preenchido quando status === 'done'). */
+  path?: string;
+  error?: string;
 }
 
 export default function CreateEventPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { effectiveLat, effectiveLng } = useEffectiveGeo();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
-  const [locationName, setLocationName] = useState('');
-  const [lat, setLat] = useState<string>(effectiveLat?.toString() ?? '');
-  const [lng, setLng] = useState<string>(effectiveLng?.toString() ?? '');
+  const [address, setAddress] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [price, setPrice] = useState('');
   const [mediaEntries, setMediaEntries] = useState<MediaEntry[]>([]);
   const [dragOver, setDragOver] = useState(false);
 
+  // Coordenadas derivadas do endereço (geocodificação). Não são exibidas: vão
+  // direto para o backend ao salvar.
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [geocodedFor, setGeocodedFor] = useState<string | null>(null);
+  const [resolvedLabel, setResolvedLabel] = useState<string | null>(null);
+  const [geocoding, setGeocoding] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const fillGeo = useCallback(() => {
-    if (effectiveLat !== null) setLat(effectiveLat.toString());
-    if (effectiveLng !== null) setLng(effectiveLng.toString());
-  }, [effectiveLat, effectiveLng]);
+  const runGeocode = useCallback(async (query: string): Promise<GeocodeResult | null> => {
+    const q = query.trim();
+    if (!q) {
+      setError('Informe um endereço.');
+      return null;
+    }
+    setGeocoding(true);
+    setError(null);
+    try {
+      const result = await geocodeAddress(q);
+      if (!result) {
+        setError('Endereço não encontrado. Tente ser mais específico (rua, número, cidade).');
+        setCoords(null);
+        setGeocodedFor(null);
+        setResolvedLabel(null);
+        return null;
+      }
+      setCoords({ lat: result.lat, lng: result.lng });
+      setGeocodedFor(q);
+      setResolvedLabel(result.displayName);
+      return result;
+    } catch {
+      setError('Não foi possível verificar o endereço agora. Tente novamente.');
+      return null;
+    } finally {
+      setGeocoding(false);
+    }
+  }, []);
 
-  const addMedia = () => setMediaEntries((prev) => [...prev, newMediaEntry()]);
+  const handleUseMyLocation = useCallback(async () => {
+    setError(null);
+    if (effectiveLat === null || effectiveLng === null) {
+      setError('Não foi possível obter a sua localização. Digite o endereço manualmente.');
+      return;
+    }
+    setGeocoding(true);
+    try {
+      const label = await reverseGeocode(effectiveLat, effectiveLng);
+      const finalLabel = label ?? `${effectiveLat.toFixed(5)}, ${effectiveLng.toFixed(5)}`;
+      setCoords({ lat: effectiveLat, lng: effectiveLng });
+      setAddress(finalLabel);
+      setGeocodedFor(finalLabel);
+      setResolvedLabel(finalLabel);
+    } catch {
+      const finalLabel = `${effectiveLat.toFixed(5)}, ${effectiveLng.toFixed(5)}`;
+      setCoords({ lat: effectiveLat, lng: effectiveLng });
+      setAddress(finalLabel);
+      setGeocodedFor(finalLabel);
+      setResolvedLabel(finalLabel);
+    } finally {
+      setGeocoding(false);
+    }
+  }, [effectiveLat, effectiveLng]);
 
   const removeMedia = (key: string) =>
     setMediaEntries((prev) => prev.filter((m) => m.key !== key));
 
-  const updateMedia = (key: string, field: 'url' | 'type', value: string) =>
-    setMediaEntries((prev) =>
-      prev.map((m) => (m.key === key ? { ...m, [field]: value } : m)),
-    );
+  const handleFiles = useCallback(
+    async (files: FileList | File[]) => {
+      const userId = user?.id;
+      if (!userId) {
+        setError('Faça login novamente para enviar mídias.');
+        return;
+      }
+      for (const file of Array.from(files)) {
+        const key = crypto.randomUUID();
+        const guessed: MediaType = file.type.startsWith('video/') ? 'video' : 'image';
+        setMediaEntries((prev) => [
+          ...prev,
+          { key, name: file.name, type: guessed, status: 'uploading' },
+        ]);
+        try {
+          const { path, type } = await uploadEventMedia(userId, file);
+          setMediaEntries((prev) =>
+            prev.map((m) => (m.key === key ? { ...m, status: 'done', path, type } : m)),
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Falha no upload.';
+          setMediaEntries((prev) =>
+            prev.map((m) => (m.key === key ? { ...m, status: 'error', error: message } : m)),
+          );
+        }
+      }
+    },
+    [user?.id],
+  );
 
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    const text = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
-    if (text?.trim().startsWith('http')) {
-      setMediaEntries((prev) => [...prev, { ...newMediaEntry(), url: text.trim() }]);
-    }
+    if (e.dataTransfer.files.length > 0) void handleFiles(e.dataTransfer.files);
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -65,17 +145,25 @@ export default function CreateEventPage() {
     setError(null);
     setSuccess(false);
 
-    const latNum = Number(lat);
-    const lngNum = Number(lng);
-    if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
-      setError('Latitude e longitude devem ser números válidos.');
+    const trimmedAddress = address.trim();
+    if (!trimmedAddress) {
+      setError('Informe um endereço para o evento.');
       return;
     }
 
+    // Reaproveita coords se já resolvidas para este endereço; senão geocodifica agora.
+    let resolved: GeocodeResult | null;
+    if (coords && geocodedFor === trimmedAddress) {
+      resolved = { lat: coords.lat, lng: coords.lng, displayName: resolvedLabel ?? trimmedAddress };
+    } else {
+      resolved = await runGeocode(trimmedAddress);
+    }
+    if (!resolved) return;
+
     const media: EventMediaCreate[] = mediaEntries
-      .filter((m) => m.url.trim())
+      .filter((m): m is MediaEntry & { path: string } => m.status === 'done' && !!m.path)
       .map((m, idx) => ({
-        media_url: m.url.trim(),
+        media_url: m.path,
         type: m.type,
         order_index: idx,
       }));
@@ -86,9 +174,9 @@ export default function CreateEventPage() {
         title: title.trim(),
         description: description.trim() || null,
         category: category.trim() || null,
-        location_name: locationName.trim() || null,
-        lat: latNum,
-        long: lngNum,
+        location_name: resolved.displayName || trimmedAddress,
+        lat: resolved.lat,
+        long: resolved.lng,
         event_date: eventDate || null,
         price: price.trim() || null,
         media,
@@ -101,6 +189,9 @@ export default function CreateEventPage() {
       setSubmitting(false);
     }
   };
+
+  const uploadingMedia = mediaEntries.some((m) => m.status === 'uploading');
+  const showConfirmation = resolvedLabel !== null && geocodedFor === address.trim();
 
   return (
     <div className="mx-auto max-w-2xl px-4 pb-28 pt-6 md:pb-8">
@@ -151,77 +242,57 @@ export default function CreateEventPage() {
           />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-              Categoria
-            </label>
-            <input
-              id="category"
-              type="text"
-              className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm"
-              maxLength={100}
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            />
-          </div>
-          <div>
-            <label htmlFor="locationName" className="block text-sm font-medium text-gray-700">
-              Local
-            </label>
-            <input
-              id="locationName"
-              type="text"
-              className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm"
-              maxLength={200}
-              value={locationName}
-              onChange={(e) => setLocationName(e.target.value)}
-            />
-          </div>
+        <div>
+          <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+            Categoria
+          </label>
+          <input
+            id="category"
+            type="text"
+            className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm"
+            maxLength={100}
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div>
-            <label htmlFor="lat" className="block text-sm font-medium text-gray-700">
-              Latitude *
-            </label>
+        <div>
+          <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+            Endereço *
+          </label>
+          <div className="mt-1 flex gap-2">
             <input
-              id="lat"
-              type="number"
-              step="any"
-              min={-90}
-              max={90}
+              id="address"
+              type="text"
               required
-              className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm"
-              value={lat}
-              onChange={(e) => setLat(e.target.value)}
+              className="min-w-0 flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
+              placeholder="Ex.: Avenida Paulista, 1578, São Paulo"
+              maxLength={300}
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
             />
-          </div>
-          <div>
-            <label htmlFor="lng" className="block text-sm font-medium text-gray-700">
-              Longitude *
-            </label>
-            <input
-              id="lng"
-              type="number"
-              step="any"
-              min={-180}
-              max={180}
-              required
-              className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm"
-              value={lng}
-              onChange={(e) => setLng(e.target.value)}
-            />
-          </div>
-          <div className="flex items-end">
             <button
               type="button"
-              onClick={fillGeo}
-              className="w-full rounded-xl border border-gray-300 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              onClick={() => void runGeocode(address)}
+              disabled={geocoding || !address.trim()}
+              className="shrink-0 rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
             >
-              Usar a minha posição
+              {geocoding ? 'A verificar…' : 'Verificar'}
             </button>
           </div>
+          <button
+            type="button"
+            onClick={() => void handleUseMyLocation()}
+            disabled={geocoding}
+            className="mt-2 text-sm font-medium text-red-600 hover:underline disabled:opacity-60"
+          >
+            Usar a minha localização
+          </button>
+          {showConfirmation && (
+            <p className="mt-2 rounded-xl bg-green-50 px-3 py-2 text-sm text-green-800">
+              📍 {resolvedLabel}
+            </p>
+          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -255,48 +326,56 @@ export default function CreateEventPage() {
         </div>
 
         <div>
-          <p className="text-sm font-medium text-gray-700">Média (URLs)</p>
-          <div
+          <p className="text-sm font-medium text-gray-700">Imagens e vídeos</p>
+          <label
+            htmlFor="media-input"
             onDragOver={(e) => {
               e.preventDefault();
               setDragOver(true);
             }}
             onDragLeave={() => setDragOver(false)}
             onDrop={onDrop}
-            className={`mt-2 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-8 transition-colors ${
+            className={`mt-2 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-8 transition-colors ${
               dragOver ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50'
             }`}
           >
             <UploadCloud className="h-10 w-10 text-gray-400" />
             <p className="mt-2 text-center text-sm text-gray-500">
-              Arrasta links de imagem/vídeo ou adiciona manualmente abaixo.
+              Arraste arquivos aqui ou clique para escolher (imagens ou vídeos).
             </p>
-          </div>
+            <input
+              id="media-input"
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files) void handleFiles(e.target.files);
+                e.target.value = '';
+              }}
+            />
+          </label>
 
           <div className="mt-4 space-y-2">
             {mediaEntries.map((entry) => (
-              <div key={entry.key} className="flex gap-2">
-                <input
-                  type="url"
-                  className="min-w-0 flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm"
-                  placeholder="https://…"
-                  value={entry.url}
-                  onChange={(e) => updateMedia(entry.key, 'url', e.target.value)}
-                />
-                <select
-                  className="rounded-xl border border-gray-200 px-2 text-sm"
-                  value={entry.type}
-                  onChange={(e) =>
-                    updateMedia(entry.key, 'type', e.target.value as MediaType)
-                  }
-                >
-                  <option value="image">Imagem</option>
-                  <option value="video">Vídeo</option>
-                </select>
+              <div
+                key={entry.key}
+                className="flex items-center gap-3 rounded-xl border border-gray-200 px-3 py-2 text-sm"
+              >
+                <span className="min-w-0 flex-1 truncate text-gray-700">{entry.name}</span>
+                {entry.status === 'uploading' && (
+                  <span className="shrink-0 text-gray-400">A enviar…</span>
+                )}
+                {entry.status === 'done' && (
+                  <span className="shrink-0 font-medium text-green-600">Enviado</span>
+                )}
+                {entry.status === 'error' && (
+                  <span className="shrink-0 text-red-600">{entry.error ?? 'Erro'}</span>
+                )}
                 <button
                   type="button"
                   onClick={() => removeMedia(entry.key)}
-                  className="rounded-xl border border-red-200 p-2 text-red-600 hover:bg-red-50"
+                  className="shrink-0 rounded-xl border border-red-200 p-2 text-red-600 hover:bg-red-50"
                   aria-label="Remover"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -304,19 +383,11 @@ export default function CreateEventPage() {
               </div>
             ))}
           </div>
-          <button
-            type="button"
-            onClick={addMedia}
-            className="mt-3 inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
-          >
-            <ImageIcon className="h-4 w-4" />
-            Adicionar média
-          </button>
         </div>
 
         <button
           type="submit"
-          disabled={submitting || !title.trim()}
+          disabled={submitting || geocoding || uploadingMedia || !title.trim() || !address.trim()}
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 py-4 font-semibold text-white shadow-md transition hover:bg-red-700 disabled:opacity-60"
         >
           {submitting ? (

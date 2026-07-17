@@ -128,6 +128,22 @@ export interface ChatSyncResponse {
   message?: string;
 }
 
+export type CompleteOnboardingAnswerKey =
+  | 'free_time'
+  | 'ideal_weekend'
+  | 'hobby_to_start'
+  | 'favorite_media'
+  | 'one_food_forever'
+  | 'sleep_preference';
+
+export type CompleteOnboardingAnswers = Record<CompleteOnboardingAnswerKey, string>;
+
+export interface CompleteOnboardingResponse {
+  ok: boolean;
+  steps_indexed: number;
+  vectorstore_skipped: boolean;
+}
+
 export interface FollowCreatedResponse {
   status: string;
 }
