@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth.ts';
 import { useEffectiveGeo } from '../hooks/useEffectiveGeo.ts';
 import { createEvent } from '../services/flyerApi.ts';
 import { uploadEventMedia } from '../services/storage.ts';
-import type { EventMediaCreate, MediaType } from '../types/index.ts';
+import type { EventMediaCreate, EventRecurrence, MediaType } from '../types/index.ts';
 import { formatApiError } from '../utils/apiError.ts';
 import { type GeocodeResult, geocodeAddress, reverseGeocode } from '../utils/geocode.ts';
 
@@ -22,6 +22,11 @@ interface MediaEntry {
   error?: string;
 }
 
+type RecurrenceUiMode = 'none' | 'count' | 'weekly' | 'range';
+
+/** Rótulos dos dias da semana (índice = weekday do backend: 0 = segunda … 6 = domingo). */
+const WEEKDAY_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'] as const;
+
 export default function CreateEventPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -35,6 +40,38 @@ export default function CreateEventPage() {
   const [price, setPrice] = useState('');
   const [mediaEntries, setMediaEntries] = useState<MediaEntry[]>([]);
   const [dragOver, setDragOver] = useState(false);
+
+  // Recorrência (expandida em várias linhas de evento pelo backend).
+  const [recurrenceMode, setRecurrenceMode] = useState<RecurrenceUiMode>('none');
+  const [countN, setCountN] = useState('4');
+  const [countEvery, setCountEvery] = useState<'day' | 'week'>('week');
+  const [weekdays, setWeekdays] = useState<number[]>([]);
+  const [weeklyTime, setWeeklyTime] = useState('20:00');
+  const [weeklyUntil, setWeeklyUntil] = useState('');
+  const [rangeStart, setRangeStart] = useState('');
+  const [rangeEnd, setRangeEnd] = useState('');
+  const [rangeTime, setRangeTime] = useState('20:00');
+
+  const toggleWeekday = (day: number) =>
+    setWeekdays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
+    );
+
+  const buildRecurrence = (): EventRecurrence | null => {
+    if (recurrenceMode === 'none') return null;
+    if (recurrenceMode === 'count') {
+      return { mode: 'count', every: countEvery, occurrences: Number(countN) };
+    }
+    if (recurrenceMode === 'weekly') {
+      return {
+        mode: 'weekly',
+        weekdays: [...weekdays].sort((a, b) => a - b),
+        time_of_day: weeklyTime,
+        until: weeklyUntil,
+      };
+    }
+    return { mode: 'range', start: rangeStart, end: rangeEnd, time_of_day: rangeTime };
+  };
 
   // Coordenadas derivadas do endereço (geocodificação). Não são exibidas: vão
   // direto para o backend ao salvar.
@@ -168,6 +205,24 @@ export default function CreateEventPage() {
         order_index: idx,
       }));
 
+    const recurrence = buildRecurrence();
+    if (recurrence?.mode === 'count' && (!eventDate || Number(countN) < 2)) {
+      setError('Para repetir N vezes, informe a data do evento e um número ≥ 2.');
+      return;
+    }
+    if (recurrence?.mode === 'weekly' && (recurrence.weekdays?.length ?? 0) === 0) {
+      setError('Selecione pelo menos um dia da semana.');
+      return;
+    }
+    if (recurrence?.mode === 'weekly' && !weeklyUntil) {
+      setError('Informe a data final da recorrência semanal.');
+      return;
+    }
+    if (recurrence?.mode === 'range' && (!rangeStart || !rangeEnd)) {
+      setError('Informe as datas de início e fim do intervalo.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       await createEvent({
@@ -180,6 +235,7 @@ export default function CreateEventPage() {
         event_date: eventDate || null,
         price: price.trim() || null,
         media,
+        recurrence,
       });
       setSuccess(true);
       setTimeout(() => void navigate('/events'), 1200);
@@ -383,6 +439,160 @@ export default function CreateEventPage() {
               </div>
             ))}
           </div>
+        </div>
+
+        <div>
+          <p className="text-sm font-medium text-gray-700">Recorrência</p>
+          <div className="mt-2 space-y-2">
+            {(
+              [
+                ['none', 'Não repetir'],
+                ['count', 'Repetir N vezes'],
+                ['weekly', 'Semanal'],
+                ['range', 'Intervalo de datas'],
+              ] as const
+            ).map(([value, label]) => (
+              <label key={value} className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="radio"
+                  name="recurrence-mode"
+                  value={value}
+                  checked={recurrenceMode === value}
+                  onChange={() => setRecurrenceMode(value)}
+                  className="accent-red-600"
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+
+          {recurrenceMode === 'count' && (
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor="count-n" className="block text-sm text-gray-600">
+                  Número de repetições
+                </label>
+                <input
+                  id="count-n"
+                  type="number"
+                  min={2}
+                  max={60}
+                  value={countN}
+                  onChange={(e) => setCountN(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm"
+                />
+              </div>
+              <div>
+                <label htmlFor="count-every" className="block text-sm text-gray-600">
+                  Frequência
+                </label>
+                <select
+                  id="count-every"
+                  value={countEvery}
+                  onChange={(e) => setCountEvery(e.target.value as 'day' | 'week')}
+                  className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm"
+                >
+                  <option value="day">Diária</option>
+                  <option value="week">Semanal</option>
+                </select>
+              </div>
+              <p className="text-xs text-gray-500 sm:col-span-2">
+                Começa na “Data do evento” informada acima.
+              </p>
+            </div>
+          )}
+
+          {recurrenceMode === 'weekly' && (
+            <div className="mt-3 space-y-3">
+              <div>
+                <span className="block text-sm text-gray-600">Dias da semana</span>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {WEEKDAY_LABELS.map((label, idx) => (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => toggleWeekday(idx)}
+                      aria-pressed={weekdays.includes(idx)}
+                      className={`rounded-full border px-3 py-1.5 text-sm transition ${
+                        weekdays.includes(idx)
+                          ? 'border-red-600 bg-red-600 text-white'
+                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="weekly-time" className="block text-sm text-gray-600">
+                    Hora
+                  </label>
+                  <input
+                    id="weekly-time"
+                    type="time"
+                    value={weeklyTime}
+                    onChange={(e) => setWeeklyTime(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="weekly-until" className="block text-sm text-gray-600">
+                    Repetir até
+                  </label>
+                  <input
+                    id="weekly-until"
+                    type="date"
+                    value={weeklyUntil}
+                    onChange={(e) => setWeeklyUntil(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {recurrenceMode === 'range' && (
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <div>
+                <label htmlFor="range-start" className="block text-sm text-gray-600">
+                  Início
+                </label>
+                <input
+                  id="range-start"
+                  type="date"
+                  value={rangeStart}
+                  onChange={(e) => setRangeStart(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm"
+                />
+              </div>
+              <div>
+                <label htmlFor="range-end" className="block text-sm text-gray-600">
+                  Fim
+                </label>
+                <input
+                  id="range-end"
+                  type="date"
+                  value={rangeEnd}
+                  onChange={(e) => setRangeEnd(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm"
+                />
+              </div>
+              <div>
+                <label htmlFor="range-time" className="block text-sm text-gray-600">
+                  Hora
+                </label>
+                <input
+                  id="range-time"
+                  type="time"
+                  value={rangeTime}
+                  onChange={(e) => setRangeTime(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         <button

@@ -168,6 +168,22 @@ export interface EventMediaCreate {
   order_index?: number;
 }
 
+export type RecurrenceMode = 'count' | 'weekly' | 'range';
+
+export interface EventRecurrence {
+  mode: RecurrenceMode;
+  /** count mode */
+  every?: 'day' | 'week' | null;
+  occurrences?: number | null;
+  /** weekly mode (0 = Monday … 6 = Sunday) */
+  weekdays?: number[] | null;
+  time_of_day?: string | null;
+  until?: string | null;
+  /** range mode */
+  start?: string | null;
+  end?: string | null;
+}
+
 export interface EventCreate {
   title: string;
   description?: string | null;
@@ -179,4 +195,5 @@ export interface EventCreate {
   /** Decimal sent as string. */
   price?: string | null;
   media?: EventMediaCreate[];
+  recurrence?: EventRecurrence | null;
 }

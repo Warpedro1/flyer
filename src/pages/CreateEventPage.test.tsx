@@ -99,6 +99,33 @@ describe('CreateEventPage (endereço → geocodificação)', () => {
     expect(createEvent).not.toHaveBeenCalled();
   });
 
+  it('envia a recorrência "count" ao criar um evento que se repete N vezes', async () => {
+    const user = userEvent.setup();
+    mockGeocodeHit();
+    createEvent.mockResolvedValue({ id: 'e1' });
+
+    renderPage();
+
+    await user.type(screen.getByLabelText(/título/i), 'Aula semanal');
+    await user.type(screen.getByLabelText(/endereço/i), 'Lisboa');
+    fireEvent.change(screen.getByLabelText(/data do evento/i), {
+      target: { value: '2026-08-01T20:00' },
+    });
+
+    await user.click(screen.getByLabelText(/repetir n vezes/i));
+    fireEvent.change(screen.getByLabelText(/número de repetições/i), { target: { value: '3' } });
+
+    await user.click(screen.getByRole('button', { name: /criar evento/i }));
+
+    await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
+    expect(createEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event_date: '2026-08-01T20:00',
+        recurrence: { mode: 'count', every: 'week', occurrences: 3 },
+      }),
+    );
+  });
+
   it('faz upload do arquivo e envia o path da mídia ao criar o evento', async () => {
     const user = userEvent.setup();
     mockGeocodeHit();
