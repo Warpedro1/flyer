@@ -1,5 +1,8 @@
+import axios from 'axios';
+
 import { apiClient } from '../lib/apiClient.ts';
 import type {
+  AttendeeListRead,
   ChatMessageIn,
   ChatMessageOut,
   ChatSyncResponse,
@@ -15,6 +18,9 @@ import type {
   PendingFollowOut,
   PlanRead,
   ProfileBrief,
+  RsvpQrToken,
+  RsvpRead,
+  ScanResult,
   TrophyRead,
 } from '../types/index.ts';
 
@@ -116,5 +122,72 @@ export async function getMyEvents(): Promise<EventRead[]> {
 
 export async function getUserTrophies(): Promise<TrophyRead[]> {
   const { data } = await apiClient.get<TrophyRead[]>('/trophies/');
+  return data;
+}
+
+// --- Lotação, lista de espera e admissão por QR ---
+
+export async function joinEvent(eventId: string): Promise<RsvpRead> {
+  const { data } = await apiClient.post<RsvpRead>(
+    `/events/${encodeURIComponent(eventId)}/rsvp`,
+  );
+  return data;
+}
+
+export async function leaveEvent(eventId: string): Promise<void> {
+  await apiClient.delete(`/events/${encodeURIComponent(eventId)}/rsvp`);
+}
+
+/** `null` quando o utilizador nunca se inscreveu — não é um erro. */
+export async function getMyRsvp(eventId: string): Promise<RsvpRead | null> {
+  try {
+    const { data } = await apiClient.get<RsvpRead>(
+      `/events/${encodeURIComponent(eventId)}/rsvp`,
+    );
+    return data;
+  } catch (err) {
+    if (axios.isAxiosError(err) && err.response?.status === 404) return null;
+    throw err;
+  }
+}
+
+export async function getRsvpQrToken(eventId: string): Promise<RsvpQrToken> {
+  const { data } = await apiClient.get<RsvpQrToken>(
+    `/events/${encodeURIComponent(eventId)}/rsvp/qr`,
+  );
+  return data;
+}
+
+export async function getEventAttendees(eventId: string): Promise<AttendeeListRead> {
+  const { data } = await apiClient.get<AttendeeListRead>(
+    `/events/${encodeURIComponent(eventId)}/attendees`,
+  );
+  return data;
+}
+
+/** `null` quando a fila está vazia (o backend responde 204). */
+export async function callNextInWaitlist(eventId: string): Promise<RsvpRead | null> {
+  const { data, status } = await apiClient.post<RsvpRead | ''>(
+    `/events/${encodeURIComponent(eventId)}/waitlist/call-next`,
+  );
+  if (status === 204 || !data) return null;
+  return data as RsvpRead;
+}
+
+export async function recallAttendee(
+  eventId: string,
+  rsvpId: string,
+): Promise<RsvpRead> {
+  const { data } = await apiClient.post<RsvpRead>(
+    `/events/${encodeURIComponent(eventId)}/waitlist/${encodeURIComponent(rsvpId)}/recall`,
+  );
+  return data;
+}
+
+export async function scanTicket(eventId: string, token: string): Promise<ScanResult> {
+  const { data } = await apiClient.post<ScanResult>(
+    `/events/${encodeURIComponent(eventId)}/attendance/scan`,
+    { token },
+  );
   return data;
 }

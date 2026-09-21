@@ -18,14 +18,8 @@ import {
 } from 'react-router-dom';
 
 import { useAuth } from '../../hooks/useAuth.ts';
+import { isImmersivePath } from '../../utils/immersivePaths.ts';
 import { WingHeartLogo } from './WingHeartLogo.tsx';
-
-function isImmersivePath(pathname: string): boolean {
-  if (pathname === '/plans' || pathname === '/events/new') return true;
-  const m = /^\/events\/([^/]+)$/.exec(pathname);
-  if (m && m[1] !== 'new') return true;
-  return false;
-}
 
 function SidebarLink({
   to,

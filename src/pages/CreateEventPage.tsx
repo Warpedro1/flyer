@@ -38,6 +38,12 @@ export default function CreateEventPage() {
   const [address, setAddress] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [price, setPrice] = useState('');
+  // Lotação é opt-in: um evento sem limite continua a ser o caso por omissão.
+  const [limitPeople, setLimitPeople] = useState(false);
+  const [capacity, setCapacity] = useState('20');
+  const [waitlistEnabled, setWaitlistEnabled] = useState(true);
+  const [callTtl, setCallTtl] = useState('10');
+  const [autoCallNext, setAutoCallNext] = useState(true);
   const [mediaEntries, setMediaEntries] = useState<MediaEntry[]>([]);
   const [dragOver, setDragOver] = useState(false);
 
@@ -236,6 +242,10 @@ export default function CreateEventPage() {
         price: price.trim() || null,
         media,
         recurrence,
+        capacity: limitPeople && Number(capacity) > 0 ? Number(capacity) : null,
+        waitlist_enabled: limitPeople ? waitlistEnabled : true,
+        call_ttl_minutes: Number(callTtl) > 0 ? Number(callTtl) : 10,
+        auto_call_next: autoCallNext,
       });
       setSuccess(true);
       setTimeout(() => void navigate('/events'), 1200);
@@ -380,6 +390,87 @@ export default function CreateEventPage() {
             />
           </div>
         </div>
+
+        <fieldset className="rounded-2xl border border-gray-200 p-4">
+          <legend className="px-1 text-sm font-medium text-gray-700">Lotação</legend>
+
+          <label className="flex items-center gap-3 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={limitPeople}
+              onChange={(e) => setLimitPeople(e.target.checked)}
+              className="h-4 w-4 accent-red-600"
+            />
+            Limitar número de pessoas
+          </label>
+
+          {limitPeople && (
+            <div className="mt-4 space-y-4">
+              <div>
+                <label
+                  htmlFor="capacity"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Número máximo de pessoas
+                </label>
+                <input
+                  id="capacity"
+                  type="number"
+                  min={1}
+                  className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm"
+                  value={capacity}
+                  onChange={(e) => setCapacity(e.target.value)}
+                />
+              </div>
+
+              <label className="flex items-center gap-3 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={waitlistEnabled}
+                  onChange={(e) => setWaitlistEnabled(e.target.checked)}
+                  className="h-4 w-4 accent-red-600"
+                />
+                Lista de espera quando encher
+              </label>
+
+              {/* Sem fila não há ninguém para chamar, logo não há prazo a definir. */}
+              {waitlistEnabled && (
+                <>
+                  <div>
+                    <label
+                      htmlFor="callTtl"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Minutos para aparecer depois de ser chamado
+                    </label>
+                    <input
+                      id="callTtl"
+                      type="number"
+                      min={1}
+                      max={240}
+                      className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm"
+                      value={callTtl}
+                      onChange={(e) => setCallTtl(e.target.value)}
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Passado o prazo a pessoa deixa de ocupar a vaga.
+                    </p>
+                  </div>
+
+                  <label className="flex items-center gap-3 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={autoCallNext}
+                      onChange={(e) => setAutoCallNext(e.target.checked)}
+                      className="h-4 w-4 accent-red-600"
+                    />
+                    Chamar o próximo automaticamente quando o prazo passar
+                  </label>
+                </>
+              )}
+            </div>
+          )}
+        </fieldset>
 
         <div>
           <p className="text-sm font-medium text-gray-700">Imagens e vídeos</p>

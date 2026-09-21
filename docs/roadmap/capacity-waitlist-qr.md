@@ -1,9 +1,13 @@
 # Próximo passo — Lotação, lista de espera e check-in por QR (frontend)
 
-> Estado: **especificação**, ainda não implementado.
+> Estado: **implementado**. Este documento fica como registo do desenho e das
+> decisões; o código é a fonte da verdade a partir daqui.
 > Os contratos da API estão em `FlyerBack/docs/roadmap/capacity-waitlist-qr.md`.
-> Implementar **depois** do backend: sem os endpoints não há o que testar contra
-> MSW a não ser contratos inventados.
+>
+> Onde ficou: `useCountdown` em `src/hooks/`, `MyTicketPage`,
+> `EventAttendeesPage` e `ScanTicketPage` em `src/pages/`, `isImmersivePath`
+> movido para `src/utils/immersivePaths.ts`, e os campos de lotação em
+> `CreateEventPage` e `EventDetailsPage`.
 
 ## O que o utilizador vai poder fazer
 
