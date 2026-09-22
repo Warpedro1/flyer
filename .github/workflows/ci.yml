@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificacoes:
+    name: Tipos, lint e testes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      # npm ci em vez de npm install: falha se o package-lock.json estiver
+      # dessincronizado do package.json, em vez de o corrigir em silêncio.
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Tipos (tsc)
+        run: npx tsc -b
+
+      - name: Lint (eslint)
+        run: npx eslint .
+
+      - name: Testes (vitest)
+        run: npx vitest run
+
+  aprovar:
+    name: Aprovar automaticamente
+    needs: [verificacoes]
+    # Só PRs do próprio repositório. Um PR vindo de um fork nunca é aprovado
+    # sozinho: o código é de terceiros e os testes dele passarem não diz nada
+    # sobre a intenção de quem o escreveu.
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      # actions/github-script é da própria GitHub. Há ações de terceiros que
+      # fazem isto em menos linhas, mas dar-lhes um token com permissão de
+      # escrita em PRs é superfície de ataque que não se justifica aqui.
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const { owner, repo } = context.repo;
+
+            // Idempotente: um push novo ao mesmo PR não empilha aprovações.
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner, repo, pull_number: pr.number, per_page: 100,
+            });
+            const jaAprovado = reviews.some(
+              (r) => r.state === 'APPROVED'
+                  && r.user?.login === 'github-actions[bot]'
+                  && r.commit_id === pr.head.sha,
+            );
+            if (jaAprovado) {
+              core.info(`Já existe aprovação automática para ${pr.head.sha}. Nada a fazer.`);
+              return;
+            }
+
+            await github.rest.pulls.createReview({
+              owner, repo, pull_number: pr.number,
+              event: 'APPROVE',
+              body: [
+                'Aprovado automaticamente: as verificações do CI passaram.',
+                '',
+                '**O que isto verifica e o que não verifica.** Os testes cobrem',
+                'a lógica da aplicação. Não vêem permissões da base de dados,',
+                'políticas de RLS, nem segredos mal colocados — nesta mesma',
+                'linha de trabalho os 107 testes passaram enquanto as funções',
+                '`rsvp_*` estavam abertas ao role `anon`. Uma aprovação daqui',
+                'não substitui ler o diff quando ele toca em permissões,',
+                'autenticação ou migrações.',
+              ].join('\n'),
+            });
+            core.info(`PR #${pr.number} aprovado em ${pr.head.sha}.`);
