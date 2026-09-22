@@ -152,3 +152,79 @@ describe('CreateEventPage (endereço → geocodificação)', () => {
     );
   });
 });
+
+describe('CreateEventPage (lotação e lista de espera)', () => {
+  beforeEach(() => {
+    createEvent.mockReset();
+    uploadEventMedia.mockReset();
+  });
+
+  it('cria um evento sem limite de pessoas por omissão', async () => {
+    const user = userEvent.setup();
+    mockGeocodeHit();
+    createEvent.mockResolvedValue({ id: 'e1' });
+
+    renderPage();
+
+    await user.type(screen.getByLabelText(/título/i), 'Sarau aberto');
+    await user.type(screen.getByLabelText(/endereço/i), 'Lisboa');
+    await user.click(screen.getByRole('button', { name: /criar evento/i }));
+
+    await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
+    expect(createEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ capacity: null }),
+    );
+  });
+
+  it('esconde as opções de fila enquanto não houver limite', () => {
+    renderPage();
+
+    expect(screen.queryByLabelText(/número máximo de pessoas/i)).toBeNull();
+    expect(screen.queryByLabelText(/minutos para aparecer/i)).toBeNull();
+  });
+
+  it('envia a lotação e as regras da fila quando o limite é ligado', async () => {
+    const user = userEvent.setup();
+    mockGeocodeHit();
+    createEvent.mockResolvedValue({ id: 'e1' });
+
+    renderPage();
+
+    await user.type(screen.getByLabelText(/título/i), 'Workshop de 20');
+    await user.type(screen.getByLabelText(/endereço/i), 'Lisboa');
+    await user.click(screen.getByLabelText(/limitar número de pessoas/i));
+
+    fireEvent.change(screen.getByLabelText(/número máximo de pessoas/i), {
+      target: { value: '20' },
+    });
+    fireEvent.change(screen.getByLabelText(/minutos para aparecer/i), {
+      target: { value: '15' },
+    });
+
+    await user.click(screen.getByRole('button', { name: /criar evento/i }));
+
+    await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
+    expect(createEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        capacity: 20,
+        waitlist_enabled: true,
+        call_ttl_minutes: 15,
+        auto_call_next: true,
+      }),
+    );
+  });
+
+  it('sem lista de espera não pergunta por prazos de chamada', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await user.click(screen.getByLabelText(/limitar número de pessoas/i));
+    expect(screen.getByLabelText(/minutos para aparecer/i)).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText(/lista de espera quando encher/i));
+
+    // Sem fila não há ninguém para chamar, logo não há prazo que faça sentido.
+    expect(screen.queryByLabelText(/minutos para aparecer/i)).toBeNull();
+  });
+});
