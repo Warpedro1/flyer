@@ -67,6 +67,17 @@ export interface DiscoverRequest {
   page_size?: number;
 }
 
+/**
+ * Header `X-Discovery-Mode` de POST /events/discover. `nearby`: o utilizador ainda
+ * não tem vetor de interesses e recebe os eventos próximos, por data.
+ */
+export type DiscoveryMode = 'personalized' | 'nearby';
+
+export interface DiscoverResult {
+  events: EventRead[];
+  mode: DiscoveryMode;
+}
+
 export interface ChatMessageIn {
   content: string;
 }

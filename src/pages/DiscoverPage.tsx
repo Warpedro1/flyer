@@ -1,11 +1,11 @@
-import { Calendar, Map as MapIcon, Plus, Search } from 'lucide-react';
+import { Calendar, Map as MapIcon, MessageCircle, Plus, Search } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { EventFeedCard } from '../components/ui/EventFeedCard.tsx';
 import { useEffectiveGeo } from '../hooks/useEffectiveGeo.ts';
-import { discoverEvents } from '../services/flyerApi.ts';
-import type { EventRead } from '../types/index.ts';
+import { discoverEventsWithMode } from '../services/flyerApi.ts';
+import type { DiscoveryMode, EventRead } from '../types/index.ts';
 import { formatApiError } from '../utils/apiError.ts';
 import { DISCOVER_DEFAULTS, FALLBACK_GEO } from '../utils/constants.ts';
 import { friendlyGeoError } from '../utils/geoMessages.ts';
@@ -27,6 +27,7 @@ export default function DiscoverPage() {
   const [discoverLoading, setDiscoverLoading] = useState(false);
   const [discoverError, setDiscoverError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [mode, setMode] = useState<DiscoveryMode>('personalized');
 
   const loadDiscover = useCallback(
     async (nextPage: number, append: boolean) => {
@@ -34,13 +35,14 @@ export default function DiscoverPage() {
       setDiscoverLoading(true);
       setDiscoverError(null);
       try {
-        const data = await discoverEvents({
+        const { events: data, mode: nextMode } = await discoverEventsWithMode({
           latitude: effectiveLat,
           longitude: effectiveLng,
           radius_km: DISCOVER_DEFAULTS.radiusKm,
           page: nextPage,
           page_size: DISCOVER_DEFAULTS.pageSize,
         });
+        setMode(nextMode);
         setEvents((prev) => {
           if (!append) return data;
           const seen = new Set(prev.map((e) => e.id));
@@ -182,6 +184,26 @@ export default function DiscoverPage() {
         <div className="mb-6 rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sky-900" role="status">
           A mostrar eventos perto de {FALLBACK_GEO.label}. Quando ativares o GPS, usa
           &quot;Atualizar localização&quot; para resultados à tua volta.
+        </div>
+      )}
+
+      {mode === 'nearby' && !discoverError && (
+        <div
+          className="mb-6 flex flex-col gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 text-red-900 sm:flex-row sm:items-center sm:justify-between"
+          role="status"
+        >
+          <p>
+            Ainda não conhecemos os teus gostos: estes eventos estão perto de ti, por data. Faz
+            o onboarding no Chat para recomendações à tua medida.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/chat')}
+            className="flex shrink-0 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
+          >
+            <MessageCircle className="h-4 w-4" />
+            Fazer o onboarding
+          </button>
         </div>
       )}
 
