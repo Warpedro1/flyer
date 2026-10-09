@@ -10,6 +10,7 @@ import type {
   CompleteOnboardingAnswers,
   CompleteOnboardingResponse,
   DiscoverRequest,
+  DiscoverResult,
   EventCreate,
   EventRead,
   FollowAction,
@@ -23,10 +24,16 @@ import type {
   ScanResult,
   TrophyRead,
 } from '../types/index.ts';
+import { parseDiscoveryMode } from '../utils/discoveryMode.ts';
+
+export async function discoverEventsWithMode(req: DiscoverRequest): Promise<DiscoverResult> {
+  const { data, headers } = await apiClient.post<EventRead[]>('/events/discover', req);
+  return { events: data, mode: parseDiscoveryMode(headers['x-discovery-mode']) };
+}
 
 export async function discoverEvents(req: DiscoverRequest): Promise<EventRead[]> {
-  const { data } = await apiClient.post<EventRead[]>('/events/discover', req);
-  return data;
+  const { events } = await discoverEventsWithMode(req);
+  return events;
 }
 
 export async function checkIn(req: CheckInRequest): Promise<TrophyRead> {
