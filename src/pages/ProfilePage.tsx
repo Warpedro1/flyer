@@ -1,4 +1,4 @@
-import { CreditCard, Users } from 'lucide-react';
+import { CreditCard, LogOut, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -12,7 +12,7 @@ const DEFAULT_AVATAR =
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [trophies, setTrophies] = useState<TrophyRead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,6 +74,16 @@ export default function ProfilePage() {
             Amigos
           </button>
         </div>
+
+        {/* No desktop o Sair está na barra lateral; no telemóvel ela não existe. */}
+        <button
+          type="button"
+          onClick={() => void signOut()}
+          className="mt-3 flex w-full max-w-md items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white py-3 font-semibold text-gray-500 shadow-sm transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 md:hidden"
+        >
+          <LogOut className="h-5 w-5" />
+          Sair
+        </button>
       </div>
 
       <div className="mt-12">

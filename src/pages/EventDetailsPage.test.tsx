@@ -146,6 +146,17 @@ describe('EventDetailsPage — lotação e lista de espera', () => {
     expect(link).toHaveAttribute('href', '/events/evt-1/ticket');
   });
 
+  it('o link do bilhete ocupa a largura toda, como o botão de check-in', async () => {
+    // Um <a> é inline: sem `block`, o w-full e o py-4 não ocupam espaço e o link
+    // fica estreito e encostado ao botão de baixo.
+    getEventById.mockResolvedValue(event(state({ my_status: 'confirmed' })));
+
+    renderPage();
+
+    const link = await screen.findByRole('link', { name: /ver o meu bilhete/i });
+    expect(link).toHaveClass('block', 'w-full');
+  });
+
   it('deixa quem não apareceu voltar para a fila', async () => {
     getEventById.mockResolvedValue(event(state({ taken: 50, my_status: 'no_show' })));
 

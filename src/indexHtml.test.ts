@@ -19,4 +19,10 @@ describe('index.html', () => {
   it('declara a língua da app como português', () => {
     expect(indexHtml).toMatch(/<html[^>]*\blang="pt"/);
   });
+
+  it('deixa a app ocupar o ecrã todo no iPhone, para a barra de baixo respeitar a zona segura', () => {
+    // Sem viewport-fit=cover, env(safe-area-inset-bottom) vale 0 no iOS e a barra
+    // de navegação fica por baixo do indicador de início.
+    expect(indexHtml).toMatch(/<meta name="viewport" content="[^"]*viewport-fit=cover/);
+  });
 });

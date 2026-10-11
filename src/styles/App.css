@@ -12,6 +12,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Só o <main> faz scroll. A página fica com a altura do ecrã e não ressalta, para o
+   fim do scroll do <main> não arrastar a barra de navegação no telemóvel. */
+html,
+body,
 #root {
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
 }

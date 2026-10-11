@@ -170,10 +170,12 @@ export default function EventDetailsPage() {
     );
   }
 
+  // `block`: o bilhete é um <Link> (um <a>, inline), e sem isto o w-full e o py-4
+  // não ocupam espaço.
   const primaryButton =
-    'w-full rounded-2xl bg-red-600 py-4 text-center font-semibold text-white shadow-lg shadow-red-200 transition hover:bg-red-700 disabled:opacity-60';
+    'block w-full rounded-2xl bg-red-600 py-4 text-center font-semibold text-white shadow-lg shadow-red-200 transition hover:bg-red-700 disabled:opacity-60';
   const secondaryButton =
-    'w-full rounded-2xl border border-gray-200 py-4 text-center font-semibold text-gray-700 transition hover:border-red-300 hover:text-red-600 disabled:opacity-60';
+    'block w-full rounded-2xl border border-gray-200 py-4 text-center font-semibold text-gray-700 transition hover:border-red-300 hover:text-red-600 disabled:opacity-60';
 
   // A ação depende do lugar da pessoa na fila. Um evento sem lotação nunca chega
   // ao ramo da lista de espera: `isFull` é sempre falso sem `capacity`.
@@ -215,7 +217,7 @@ export default function EventDetailsPage() {
   }
 
   return (
-    <div className="pb-28">
+    <div className="pb-28 md:pb-6">
       <div className="relative h-72 w-full sm:h-96">
         <img src={cover} alt="" className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 to-transparent" />
@@ -367,7 +369,7 @@ export default function EventDetailsPage() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 z-[100] border-t border-gray-200 bg-white/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur md:static md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
-        <div className="mx-auto max-w-3xl space-y-2">
+        <div className="mx-auto max-w-3xl space-y-2 md:px-4">
           {rsvpAction}
           <button
             type="button"

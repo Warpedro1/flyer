@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DiscoverResult, EventRead } from '../types/index.ts';
 
@@ -51,6 +52,19 @@ function result(mode: DiscoverResult['mode']): DiscoverResult {
   return { events: [event('evt-1', 'Concerto no Tejo')], mode };
 }
 
+// O jsdom não tem IntersectionObserver: este guarda os callbacks para o teste
+// simular o sentinela do fim da lista a entrar no ecrã.
+type IoCallback = (entries: Array<{ isIntersecting: boolean }>) => void;
+const observers: IoCallback[] = [];
+class FakeIntersectionObserver {
+  constructor(callback: IoCallback) {
+    observers.push(callback);
+  }
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+}
+
 function renderPage() {
   return render(
     <MemoryRouter initialEntries={['/']}>
@@ -65,6 +79,12 @@ function renderPage() {
 describe('DiscoverPage', () => {
   beforeEach(() => {
     discoverEventsWithMode.mockReset();
+    observers.length = 0;
+    vi.stubGlobal('IntersectionObserver', FakeIntersectionObserver);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('mostra os eventos recomendados sem aviso quando a descoberta é personalizada', async () => {
@@ -94,4 +114,23 @@ describe('DiscoverPage', () => {
 
     expect(screen.getByText('Página do Chat')).toBeInTheDocument();
   });
+
+  it('carrega a página seguinte quando o fim da lista aparece no ecrã', async () => {
+    // Quem faz scroll é o <main>, não a janela: um listener no window nunca dispara.
+    const fullPage = Array.from({ length: 20 }, (_, i) => event(`evt-${i}`, `Evento ${i}`));
+    discoverEventsWithMode
+      .mockResolvedValueOnce({ events: fullPage, mode: 'personalized' })
+      .mockResolvedValueOnce({ events: [event('evt-99', 'Último evento')], mode: 'personalized' });
+
+    renderPage();
+    await screen.findByText('Evento 0');
+
+    act(() => {
+      for (const cb of observers) cb([{ isIntersecting: true }]);
+    });
+
+    expect(await screen.findByText('Último evento')).toBeInTheDocument();
+    expect(discoverEventsWithMode).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 }));
+  });
 });
+
