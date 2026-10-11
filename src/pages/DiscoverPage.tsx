@@ -1,6 +1,8 @@
-import { Calendar, Map as MapIcon, MessageCircle, Plus, Search } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Calendar, Map as MapIcon, MessageCircle, Plus } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+
+import { DiscoverFilters } from '../components/discover/DiscoverFilters.tsx';
 
 import { EventFeedCard } from '../components/ui/EventFeedCard.tsx';
 import { useEffectiveGeo } from '../hooks/useEffectiveGeo.ts';
@@ -8,10 +10,24 @@ import { discoverEventsWithMode } from '../services/flyerApi.ts';
 import type { DiscoveryMode, EventRead } from '../types/index.ts';
 import { formatApiError } from '../utils/apiError.ts';
 import { DISCOVER_DEFAULTS, FALLBACK_GEO } from '../utils/constants.ts';
+import {
+  type DiscoverFilters as Filters,
+  filtersFromParams,
+  filtersToParams,
+  filtersToRequest,
+} from '../utils/discoverFilters.ts';
 import { friendlyGeoError } from '../utils/geoMessages.ts';
 
 export default function DiscoverPage() {
   const navigate = useNavigate();
+  // Os filtros vivem no URL: partilháveis e preservados ao voltar de um evento.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filterKey = filtersToParams(filtersFromParams(searchParams)).toString();
+  const filters = useMemo(() => filtersFromParams(new URLSearchParams(filterKey)), [filterKey]);
+  const setFilters = useCallback(
+    (next: Filters) => setSearchParams(filtersToParams(next), { replace: true }),
+    [setSearchParams],
+  );
   const {
     error: geoError,
     loading: geoLoading,
@@ -38,7 +54,7 @@ export default function DiscoverPage() {
         const { events: data, mode: nextMode } = await discoverEventsWithMode({
           latitude: effectiveLat,
           longitude: effectiveLng,
-          radius_km: DISCOVER_DEFAULTS.radiusKm,
+          ...filtersToRequest(filters, new Date()),
           page: nextPage,
           page_size: DISCOVER_DEFAULTS.pageSize,
         });
@@ -63,7 +79,7 @@ export default function DiscoverPage() {
         setDiscoverLoading(false);
       }
     },
-    [effectiveLat, effectiveLng],
+    [effectiveLat, effectiveLng, filters],
   );
 
   useEffect(() => {
@@ -104,17 +120,6 @@ export default function DiscoverPage() {
 
   return (
     <div className="p-4 pb-28 sm:p-8 md:pb-8">
-      <div className="relative mb-8 max-w-xl">
-        <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-        <input
-          type="search"
-          readOnly
-          placeholder="Pesquisar eventos, categorias..."
-          className="w-full rounded-full border border-gray-200 bg-white py-3.5 pl-12 pr-4 text-sm shadow-sm transition-all focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
-          aria-label="Pesquisa (em breve)"
-        />
-      </div>
-
       <div className="mb-8 mt-2 flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
         <div>
           <h2 className="text-3xl font-bold text-gray-900">Na Linha da Frente</h2>
@@ -147,6 +152,8 @@ export default function DiscoverPage() {
           </button>
         </div>
       </div>
+
+      <DiscoverFilters filters={filters} onChange={setFilters} />
 
       {geoLoading && (
         <div className="flex flex-col items-center py-12">

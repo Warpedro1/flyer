@@ -1,9 +1,11 @@
-import { Calendar } from 'lucide-react';
+import { Calendar, MapPin, Star } from 'lucide-react';
 
 import type { EventRead } from '../../types/index.ts';
+import { categoryLabel } from '../../utils/categories.ts';
 import {
+  eventPriceText,
   formatEventDate,
-  formatPriceLabel,
+  formatRating,
   pickCoverImage,
   PLACEHOLDER_IMAGE,
 } from '../../utils/eventFormatters.ts';
@@ -16,8 +18,10 @@ export interface EventFeedCardProps {
 
 export function EventFeedCard({ event, onOpen, footer }: EventFeedCardProps) {
   const cover = pickCoverImage(event) ?? PLACEHOLDER_IMAGE;
-  const { text: priceText } = formatPriceLabel(event.price);
+  const priceText = eventPriceText(event);
   const { date: dateLabel } = formatEventDate(event.event_date);
+  const isPlace = event.kind === 'place';
+  const category = categoryLabel(event.category);
 
   return (
     <div
@@ -44,13 +48,20 @@ export function EventFeedCard({ event, onOpen, footer }: EventFeedCardProps) {
         className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-gray-900/95 via-gray-900/30 to-transparent" />
-      {event.category && (
-        <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+      <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+        <span
+          className={`rounded-full px-3 py-1.5 text-xs font-bold shadow-sm backdrop-blur-md ${
+            isPlace ? 'bg-gray-900/80 text-white' : 'bg-red-600 text-white'
+          }`}
+        >
+          {isPlace ? 'Lugar' : 'Evento'}
+        </span>
+        {category && (
           <span className="rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-red-600 shadow-sm backdrop-blur-md">
-            {event.category}
+            {category}
           </span>
-        </div>
-      )}
+        )}
+      </div>
       <div className="absolute bottom-0 w-full p-5 text-white">
         <h3 className="mb-1 text-xl font-bold leading-tight transition-colors group-hover:text-red-400">
           {event.title}
@@ -60,11 +71,28 @@ export function EventFeedCard({ event, onOpen, footer }: EventFeedCardProps) {
         )}
         <div className="flex items-center justify-between text-sm font-medium">
           <div className="flex items-center gap-3 text-xs text-gray-200">
-            <span className="flex items-center">
-              <Calendar className="mr-1.5 h-3.5 w-3.5 text-red-400" />
-              {dateLabel}
-            </span>
-            <span className="text-red-300">{priceText}</span>
+            {isPlace ? (
+              <>
+                {event.rating !== null && (
+                  <span className="flex items-center">
+                    <Star className="mr-1 h-3.5 w-3.5 text-red-400" />
+                    {formatRating(event.rating)}
+                  </span>
+                )}
+                {event.location_name && (
+                  <span className="flex min-w-0 items-center">
+                    <MapPin className="mr-1 h-3.5 w-3.5 shrink-0 text-red-400" />
+                    <span className="truncate">{event.location_name}</span>
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="flex items-center">
+                <Calendar className="mr-1.5 h-3.5 w-3.5 text-red-400" />
+                {dateLabel}
+              </span>
+            )}
+            {priceText && <span className="shrink-0 text-red-300">{priceText}</span>}
           </div>
         </div>
         {footer && (

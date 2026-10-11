@@ -32,11 +32,48 @@ export interface EventMediaRead {
   order_index: number;
 }
 
+/** Taxonomia de coisas para fazer (`EventCategory` no backend). Rótulos: utils/categories.ts. */
+export type EventCategory =
+  | 'comida_bebida'
+  | 'vida_noturna'
+  | 'musica_show'
+  | 'arte_cultura'
+  | 'teatro_cinema'
+  | 'palestra_conhecimento'
+  | 'cursos_oficinas'
+  | 'estudo_leitura'
+  | 'debate_comunidade'
+  | 'voluntariado'
+  | 'desporto'
+  | 'academia_exercicio'
+  | 'bem_estar'
+  | 'praia_natureza'
+  | 'turismo_passeio'
+  | 'jogos'
+  | 'compras_lojas'
+  | 'feira_mercado'
+  | 'familia_criancas'
+  | 'religiao_espiritualidade'
+  | 'tecnologia_negocios'
+  | 'outros';
+
+/** `event` tem data (ou foi criado na app); `place` é um sítio permanente para ir. */
+export type EventKind = 'event' | 'place';
+
+export interface OpeningHours {
+  day: string;
+  hours: string;
+}
+
 export interface EventRead {
   id: string;
+  kind: EventKind;
+  /** Lugar (kind = place) onde o evento acontece. */
+  place_id: string | null;
   creator_id: string | null;
   title: string;
   description: string | null;
+  /** Um slug de EventCategory; eventos antigos podem ter outro texto. */
   category: string | null;
   location_name: string | null;
   lat: number;
@@ -57,6 +94,12 @@ export interface EventRead {
   boost_expires_at: string | null;
   created_at: string | null;
   media: EventMediaRead[];
+  /** Só lugares: horários e nível de preço de 1 ($) a 4 ($$$$). */
+  opening_hours: OpeningHours[] | null;
+  price_level: number | null;
+  /** Itens importados: página na fonte (Google Maps, Sympla) e imagem pública. */
+  source_url: string | null;
+  cover_url: string | null;
 }
 
 export interface DiscoverRequest {
@@ -65,6 +108,14 @@ export interface DiscoverRequest {
   radius_km?: number;
   page?: number;
   page_size?: number;
+  /** Filtros opcionais. Os lugares passam sempre nos filtros de data e de valor. */
+  kinds?: EventKind[];
+  categories?: EventCategory[];
+  /** ISO 8601. */
+  date_from?: string;
+  date_to?: string;
+  /** Decimal em string; "0" = só grátis. */
+  max_price?: string;
 }
 
 /**
@@ -204,7 +255,9 @@ export interface EventRecurrence {
 export interface EventCreate {
   title: string;
   description?: string | null;
-  category?: string | null;
+  category?: EventCategory | null;
+  /** Lugar (kind = place) onde o evento acontece. */
+  place_id?: string | null;
   location_name?: string | null;
   lat: number;
   long: number;

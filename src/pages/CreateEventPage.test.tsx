@@ -6,12 +6,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { server } from '../mocks/server.ts';
 
+import { makePlace } from '../test/factories.ts';
+
 import CreateEventPage from './CreateEventPage.tsx';
 
 const createEvent = vi.hoisted(() => vi.fn());
 const uploadEventMedia = vi.hoisted(() => vi.fn());
+const discoverEvents = vi.hoisted(() => vi.fn());
 
-vi.mock('../services/flyerApi.ts', () => ({ createEvent }));
+vi.mock('../services/flyerApi.ts', () => ({ createEvent, discoverEvents }));
 vi.mock('../services/storage.ts', () => ({ uploadEventMedia }));
 vi.mock('../hooks/useAuth.ts', () => ({
   useAuth: () => ({
@@ -228,3 +231,63 @@ describe('CreateEventPage (lotação e lista de espera)', () => {
     expect(screen.queryByLabelText(/minutos para aparecer/i)).toBeNull();
   });
 });
+
+describe('CreateEventPage (categoria e lugar)', () => {
+  beforeEach(() => {
+    createEvent.mockReset().mockResolvedValue({ id: 'e1' });
+    discoverEvents.mockReset();
+  });
+
+  it('a categoria escolhe-se da taxonomia e vai como slug', async () => {
+    const user = userEvent.setup();
+    mockGeocodeHit();
+
+    renderPage();
+
+    await user.type(screen.getByLabelText(/título/i), 'Luau');
+    await user.selectOptions(screen.getByLabelText(/categoria/i), 'Praia e natureza');
+    await user.type(screen.getByLabelText(/endereço/i), 'Lisboa');
+    await user.click(screen.getByRole('button', { name: /criar evento/i }));
+
+    await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
+    expect(createEvent).toHaveBeenCalledWith(expect.objectContaining({ category: 'praia_natureza' }));
+  });
+
+  it('escolher um lugar do Flyer usa a morada e as coordenadas dele', async () => {
+    const user = userEvent.setup();
+    discoverEvents.mockResolvedValue([makePlace()]);
+
+    renderPage();
+
+    await user.type(screen.getByLabelText(/título/i), 'Noite de forró');
+    await user.type(screen.getByLabelText(/lugar do flyer/i), 'parra');
+    await user.click(await screen.findByRole('button', { name: /parraxaxá/i }));
+    await user.click(screen.getByRole('button', { name: /criar evento/i }));
+
+    await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
+    expect(createEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        place_id: 'place-1',
+        location_name: 'Av. Fernando Simões Barbosa, 1200 - Boa Viagem',
+        lat: -8.06,
+        long: -34.87,
+      }),
+    );
+    expect(discoverEvents).toHaveBeenCalledWith(expect.objectContaining({ kinds: ['place'] }));
+  });
+
+  it('sem lugar escolhido não manda place_id', async () => {
+    const user = userEvent.setup();
+    mockGeocodeHit();
+
+    renderPage();
+
+    await user.type(screen.getByLabelText(/título/i), 'Festa');
+    await user.type(screen.getByLabelText(/endereço/i), 'Lisboa');
+    await user.click(screen.getByRole('button', { name: /criar evento/i }));
+
+    await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
+    expect(createEvent.mock.calls[0][0].place_id ?? null).toBeNull();
+  });
+});
+

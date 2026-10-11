@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { act } from 'react';
@@ -26,6 +26,8 @@ vi.mock('../hooks/useEffectiveGeo.ts', () => ({
 function event(id: string, title: string): EventRead {
   return {
     id,
+    kind: 'event',
+    place_id: null,
     creator_id: null,
     title,
     description: null,
@@ -45,6 +47,10 @@ function event(id: string, title: string): EventRead {
     boost_expires_at: null,
     created_at: null,
     media: [],
+    opening_hours: null,
+    price_level: null,
+    source_url: null,
+    cover_url: null,
   };
 }
 
@@ -65,9 +71,9 @@ class FakeIntersectionObserver {
   disconnect(): void {}
 }
 
-function renderPage() {
+function renderPage(url = '/') {
   return render(
-    <MemoryRouter initialEntries={['/']}>
+    <MemoryRouter initialEntries={[url]}>
       <Routes>
         <Route path="/" element={<DiscoverPage />} />
         <Route path="/chat" element={<p>Página do Chat</p>} />
@@ -131,6 +137,33 @@ describe('DiscoverPage', () => {
 
     expect(await screen.findByText('Último evento')).toBeInTheDocument();
     expect(discoverEventsWithMode).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 }));
+  });
+
+  it('os filtros do URL vão no pedido', async () => {
+    discoverEventsWithMode.mockResolvedValue(result('personalized'));
+
+    renderPage('/?tipo=place&cat=jogos&raio=5');
+
+    await screen.findByText('Concerto no Tejo');
+    expect(discoverEventsWithMode).toHaveBeenCalledWith(
+      expect.objectContaining({ kinds: ['place'], categories: ['jogos'], radius_km: 5, page: 1 }),
+    );
+  });
+
+  it('mudar um filtro volta a pedir a primeira página com o filtro', async () => {
+    discoverEventsWithMode.mockResolvedValue(result('personalized'));
+    const user = userEvent.setup();
+
+    renderPage();
+    await screen.findByText('Concerto no Tejo');
+    await user.click(screen.getByRole('button', { name: /filtros/i }));
+    await user.click(screen.getByRole('button', { name: 'Eventos' }));
+
+    await waitFor(() =>
+      expect(discoverEventsWithMode).toHaveBeenLastCalledWith(
+        expect.objectContaining({ kinds: ['event'], page: 1 }),
+      ),
+    );
   });
 });
 

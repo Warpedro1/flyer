@@ -121,7 +121,7 @@ export default function ProfilePage() {
               <p className="mt-2 text-sm font-semibold text-gray-900">{t.name}</p>
               {t.acquired_at && (
                 <p className="text-xs text-gray-400">
-                  {new Date(t.acquired_at).toLocaleDateString('pt-PT')}
+                  {new Date(t.acquired_at).toLocaleDateString('pt-BR')}
                 </p>
               )}
             </div>

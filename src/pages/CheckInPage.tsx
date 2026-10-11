@@ -65,7 +65,7 @@ export default function CheckInPage() {
   const handleCheckIn = async (eventId: string) => {
     if (isEstimatedPosition || latitude === null || longitude === null) {
       setCheckError(
-        'O check-in usa a tua posição real para validar a distância ao evento. Ativa o GPS e permite a localização neste site (não uses apenas a posição aproximada de Lisboa).',
+        'O check-in usa a tua posição real para validar a distância ao evento. Ativa o GPS e permite a localização neste site (não uses apenas a posição aproximada de Recife).',
       );
       return;
     }
