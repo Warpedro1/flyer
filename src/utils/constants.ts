@@ -22,7 +22,7 @@ export const CHECKIN_DISCOVER_RADIUS_KM = 1;
  * o utilizador pode continuar a descobrir eventos com um centro aproximado.
  */
 export const FALLBACK_GEO = {
-  label: 'Lisboa (centro aproximado)',
-  latitude: 38.7223,
-  longitude: -9.1393,
+  label: 'Recife (Marco Zero)',
+  latitude: -8.0631,
+  longitude: -34.8711,
 } as const;

@@ -3,25 +3,37 @@ import type { EventRead } from '../types/index.ts';
 export function pickCoverImage(event: EventRead): string | null {
   const sorted = [...event.media].sort((a, b) => a.order_index - b.order_index);
   const img = sorted.find((m) => m.type === 'image');
-  return img?.media_url ?? null;
+  // Itens importados não têm media própria: usam a imagem pública da fonte.
+  return img?.media_url ?? event.cover_url ?? null;
 }
 
+const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+export function formatMoney(value: number): string {
+  return BRL.format(value);
+}
+
+/**
+ * Preço de um evento. 0 é grátis; null é preço desconhecido (a fonte não o deu),
+ * que não se pode mostrar como grátis.
+ */
 export function formatPriceLabel(price: string | null): { text: string; isFree: boolean } {
   if (price === null) {
-    return { text: 'Grátis', isFree: true };
+    return { text: 'Preço a confirmar', isFree: false };
   }
   const n = Number(price);
   if (Number.isFinite(n)) {
-    return {
-      text:
-        new Intl.NumberFormat('pt-PT', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }).format(n) + ' €',
-      isFree: false,
-    };
+    return n === 0 ? { text: 'Grátis', isFree: true } : { text: formatMoney(n), isFree: false };
   }
   return { text: price, isFree: false };
+}
+
+/** O que mostrar como preço: o nível ($ a $$$$) para lugares, o valor para eventos. */
+export function eventPriceText(event: EventRead): string {
+  if (event.kind === 'place') {
+    return event.price_level ? '$'.repeat(event.price_level) : '';
+  }
+  return formatPriceLabel(event.price).text;
 }
 
 export function formatEventDate(iso: string | null): { date: string; time: string } {
@@ -33,8 +45,8 @@ export function formatEventDate(iso: string | null): { date: string; time: strin
     return { date: '—', time: '' };
   }
   return {
-    date: d.toLocaleDateString('pt-PT'),
-    time: d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+    date: d.toLocaleDateString('pt-BR'),
+    time: d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
   };
 }
 

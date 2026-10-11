@@ -122,6 +122,12 @@ export async function getEventById(eventId: string): Promise<EventRead> {
   return data;
 }
 
+/** Próximos eventos que acontecem num lugar (kind = place). */
+export async function getPlaceEvents(placeId: string): Promise<EventRead[]> {
+  const { data } = await apiClient.get<EventRead[]>(`/events/${encodeURIComponent(placeId)}/events`);
+  return data;
+}
+
 export async function getMyEvents(): Promise<EventRead[]> {
   const { data } = await apiClient.get<EventRead[]>('/events/mine');
   return data;

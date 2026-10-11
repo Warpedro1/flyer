@@ -1,20 +1,28 @@
 import axios from 'axios';
-import { ArrowLeft, BellRing, Heart, QrCode, Share2, Users } from 'lucide-react';
+import { ArrowLeft, BellRing, Clock, ExternalLink, Heart, MapPin, QrCode, Share2, Users } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../hooks/useAuth.ts';
 import { useEffectiveGeo } from '../hooks/useEffectiveGeo.ts';
-import { checkIn, getEventById, joinEvent, leaveEvent } from '../services/flyerApi.ts';
+import { checkIn, getEventById, getPlaceEvents, joinEvent, leaveEvent } from '../services/flyerApi.ts';
 import type { EventRead, TrophyRead } from '../types/index.ts';
 import { formatApiError } from '../utils/apiError.ts';
+import { categoryLabel } from '../utils/categories.ts';
 import {
+  eventPriceText,
   formatEventDate,
-  formatPriceLabel,
   formatRating,
   pickCoverImage,
   PLACEHOLDER_IMAGE,
 } from '../utils/eventFormatters.ts';
+
+/** Rótulo do link para a página do item na fonte. */
+function sourceLinkLabel(url: string): string {
+  if (url.includes('sympla.com')) return 'Ver na Sympla';
+  if (url.includes('google.')) return 'Ver no Google Maps';
+  return 'Ver na fonte';
+}
 
 export default function EventDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -33,7 +41,28 @@ export default function EventDetailsPage() {
   const [trophy, setTrophy] = useState<TrophyRead | null>(null);
   const [rsvpBusy, setRsvpBusy] = useState(false);
   const [rsvpError, setRsvpError] = useState<string | null>(null);
+  const [placeEvents, setPlaceEvents] = useState<EventRead[]>([]);
   const { user } = useAuth();
+  const isPlace = event?.kind === 'place';
+
+  // Um lugar mostra os próximos eventos que acontecem lá.
+  useEffect(() => {
+    if (!id || !isPlace) {
+      setPlaceEvents([]);
+      return;
+    }
+    let cancelled = false;
+    getPlaceEvents(id)
+      .then((rows) => {
+        if (!cancelled) setPlaceEvents(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setPlaceEvents([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, isPlace]);
 
   const reload = useCallback(async () => {
     if (!id) return;
@@ -96,7 +125,7 @@ export default function EventDetailsPage() {
   const isCreator = Boolean(event?.creator_id && user?.id && event.creator_id === user.id);
 
   const cover = event ? pickCoverImage(event) ?? PLACEHOLDER_IMAGE : PLACEHOLDER_IMAGE;
-  const { text: priceText } = event ? formatPriceLabel(event.price) : { text: '—' };
+  const priceText = event ? eventPriceText(event) || '—' : '—';
   const { date: dateStr, time: timeStr } = event
     ? formatEventDate(event.event_date)
     : { date: '—', time: '' };
@@ -248,11 +277,16 @@ export default function EventDetailsPage() {
             </button>
           </div>
         </div>
-        {event.category && (
-          <span className="absolute left-4 top-20 rounded-full bg-white/95 px-3 py-1 text-xs font-bold text-red-600 shadow">
-            {event.category}
+        <div className="absolute left-4 top-20 flex flex-wrap gap-2">
+          <span className="rounded-full bg-gray-900/80 px-3 py-1 text-xs font-bold text-white shadow">
+            {isPlace ? 'Lugar' : 'Evento'}
           </span>
-        )}
+          {event.category && (
+            <span className="rounded-full bg-white/95 px-3 py-1 text-xs font-bold text-red-600 shadow">
+              {categoryLabel(event.category)}
+            </span>
+          )}
+        </div>
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
           <h1 className="text-2xl font-bold leading-tight sm:text-3xl">{event.title}</h1>
           <p className="mt-1 text-sm text-gray-200">{event.location_name ?? 'Local a definir'}</p>
@@ -265,16 +299,78 @@ export default function EventDetailsPage() {
             <p className="text-xs text-gray-500">Preço</p>
             <p className="font-semibold text-gray-900">{priceText}</p>
           </div>
-          <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-            <p className="text-xs text-gray-500">Data</p>
-            <p className="font-semibold text-gray-900">{dateStr}</p>
-            {timeStr && <p className="text-xs text-gray-500">{timeStr}</p>}
-          </div>
+          {!isPlace && (
+            <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+              <p className="text-xs text-gray-500">Data</p>
+              <p className="font-semibold text-gray-900">{dateStr}</p>
+              {timeStr && <p className="text-xs text-gray-500">{timeStr}</p>}
+            </div>
+          )}
           <div className="col-span-2 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:col-span-1">
             <p className="text-xs text-gray-500">Rating</p>
             <p className="font-semibold text-gray-900">{formatRating(event.rating)}</p>
           </div>
         </div>
+
+        {event.place_id && (
+          <Link
+            to={`/events/${event.place_id}`}
+            className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:border-red-200"
+          >
+            <span className="flex items-center gap-2 font-medium text-gray-900">
+              <MapPin className="h-5 w-5 text-red-600" />
+              Ver o lugar
+            </span>
+          </Link>
+        )}
+
+        {isPlace && event.opening_hours && event.opening_hours.length > 0 && (
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+            <h2 className="mb-3 flex items-center gap-2 font-semibold text-gray-900">
+              <Clock className="h-4 w-4 text-red-600" />
+              Horários
+            </h2>
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+              {event.opening_hours.map((h) => (
+                <div key={h.day} className="contents">
+                  <dt className="text-gray-500 first-letter:uppercase">{h.day}</dt>
+                  <dd className="text-gray-900">{h.hours}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )}
+
+        {isPlace && placeEvents.length > 0 && (
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+            <h2 className="mb-3 font-semibold text-gray-900">Próximos eventos aqui</h2>
+            <ul className="space-y-2">
+              {placeEvents.map((e) => (
+                <li key={e.id}>
+                  <Link
+                    to={`/events/${e.id}`}
+                    className="flex items-center justify-between rounded-xl px-3 py-2 transition hover:bg-red-50"
+                  >
+                    <span className="font-medium text-gray-900">{e.title}</span>
+                    <span className="text-sm text-gray-500">{formatEventDate(e.event_date).date}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {event.source_url && (
+          <a
+            href={event.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:border-red-200"
+          >
+            <span className="font-medium text-gray-900">{sourceLinkLabel(event.source_url)}</span>
+            <ExternalLink className="h-5 w-5 text-red-600" />
+          </a>
+        )}
 
         {event.creator_id && (
           <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
@@ -370,7 +466,8 @@ export default function EventDetailsPage() {
 
       <div className="fixed bottom-0 left-0 right-0 z-[100] border-t border-gray-200 bg-white/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur md:static md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
         <div className="mx-auto max-w-3xl space-y-2 md:px-4">
-          {rsvpAction}
+          {/* Lugares não têm inscrição nem bilhete; o check-in mantém-se. */}
+          {!isPlace && rsvpAction}
           <button
             type="button"
             onClick={() => void handleCheckIn()}
@@ -378,7 +475,7 @@ export default function EventDetailsPage() {
             title={!canCheckInPhysically ? 'Ativa o GPS para fazer check-in' : undefined}
             className="w-full rounded-2xl bg-red-600 py-4 font-semibold text-white shadow-lg shadow-red-200 transition hover:bg-red-700 disabled:opacity-60"
           >
-            {checking ? 'A confirmar…' : 'Check-in no evento'}
+            {checking ? 'A confirmar…' : isPlace ? 'Check-in no lugar' : 'Check-in no evento'}
           </button>
         </div>
       </div>

@@ -2,12 +2,20 @@ import { Plus, Trash2, UploadCloud } from 'lucide-react';
 import { type DragEvent, type FormEvent, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { PlacePicker } from '../components/events/PlacePicker.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
 import { useEffectiveGeo } from '../hooks/useEffectiveGeo.ts';
 import { createEvent } from '../services/flyerApi.ts';
 import { uploadEventMedia } from '../services/storage.ts';
-import type { EventMediaCreate, EventRecurrence, MediaType } from '../types/index.ts';
+import type {
+  EventCategory,
+  EventMediaCreate,
+  EventRead,
+  EventRecurrence,
+  MediaType,
+} from '../types/index.ts';
 import { formatApiError } from '../utils/apiError.ts';
+import { EVENT_CATEGORIES } from '../utils/categories.ts';
 import { type GeocodeResult, geocodeAddress, reverseGeocode } from '../utils/geocode.ts';
 
 type MediaStatus = 'uploading' | 'done' | 'error';
@@ -34,7 +42,8 @@ export default function CreateEventPage() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState<EventCategory | ''>('');
+  const [place, setPlace] = useState<EventRead | null>(null);
   const [address, setAddress] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [price, setPrice] = useState('');
@@ -144,6 +153,21 @@ export default function CreateEventPage() {
     }
   }, [effectiveLat, effectiveLng]);
 
+  // Um lugar do Flyer traz a morada e as coordenadas: não é preciso geocodificar.
+  const choosePlace = (chosen: EventRead | null) => {
+    setPlace(chosen);
+    if (!chosen) return;
+    const label = chosen.location_name ?? chosen.title;
+    setAddress(label);
+    setCoords({ lat: chosen.lat, lng: chosen.long });
+    setGeocodedFor(label);
+    setResolvedLabel(label);
+    if (!category && chosen.category) {
+      const match = EVENT_CATEGORIES.find((c) => c.slug === chosen.category);
+      if (match) setCategory(match.slug);
+    }
+  };
+
   const removeMedia = (key: string) =>
     setMediaEntries((prev) => prev.filter((m) => m.key !== key));
 
@@ -234,7 +258,8 @@ export default function CreateEventPage() {
       await createEvent({
         title: title.trim(),
         description: description.trim() || null,
-        category: category.trim() || null,
+        category: category || null,
+        place_id: place?.id ?? null,
         location_name: resolved.displayName || trimmedAddress,
         lat: resolved.lat,
         long: resolved.lng,
@@ -312,13 +337,32 @@ export default function CreateEventPage() {
           <label htmlFor="category" className="block text-sm font-medium text-gray-700">
             Categoria
           </label>
-          <input
+          <select
             id="category"
-            type="text"
-            className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm"
-            maxLength={100}
+            className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm"
             value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            onChange={(e) => setCategory(e.target.value as EventCategory | '')}
+          >
+            <option value="">Sem categoria</option>
+            {EVENT_CATEGORIES.map((c) => (
+              <option key={c.slug} value={c.slug}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="placeSearch" className="block text-sm font-medium text-gray-700">
+            Lugar do Flyer (opcional)
+          </label>
+          <p className="text-xs text-gray-500">
+            Se o evento acontece num lugar que já está no Flyer, escolhe-o: aparece na página do lugar.
+          </p>
+          <PlacePicker
+            near={{ lat: effectiveLat, lng: effectiveLng }}
+            selected={place}
+            onSelect={choosePlace}
           />
         </div>
 
@@ -335,7 +379,11 @@ export default function CreateEventPage() {
               placeholder="Ex.: Avenida Paulista, 1578, São Paulo"
               maxLength={300}
               value={address}
-              onChange={(e) => setAddress(e.target.value)}
+              onChange={(e) => {
+                setAddress(e.target.value);
+                // Outra morada já não é o lugar escolhido.
+                setPlace(null);
+              }}
             />
             <button
               type="button"

@@ -5,18 +5,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { EventCapacityRead, EventRead } from '../types/index.ts';
 
+import { makeEvent, makePlace } from '../test/factories.ts';
+
 import EventDetailsPage from './EventDetailsPage.tsx';
 
 const getEventById = vi.hoisted(() => vi.fn());
 const checkIn = vi.hoisted(() => vi.fn());
 const joinEvent = vi.hoisted(() => vi.fn());
 const leaveEvent = vi.hoisted(() => vi.fn());
+const getPlaceEvents = vi.hoisted(() => vi.fn());
 
 vi.mock('../services/flyerApi.ts', () => ({
   getEventById,
   checkIn,
   joinEvent,
   leaveEvent,
+  getPlaceEvents,
 }));
 vi.mock('../hooks/useEffectiveGeo.ts', () => ({
   useEffectiveGeo: () => ({
@@ -38,6 +42,8 @@ vi.mock('../hooks/useAuth.ts', () => ({
 function event(capacityState: EventCapacityRead | null, overrides: Partial<EventRead> = {}): EventRead {
   return {
     id: 'evt-1',
+    kind: 'event',
+    place_id: null,
     creator_id: 'someone-else',
     title: 'Jam session',
     description: null,
@@ -57,6 +63,10 @@ function event(capacityState: EventCapacityRead | null, overrides: Partial<Event
     boost_expires_at: null,
     created_at: null,
     media: [],
+    opening_hours: null,
+    price_level: null,
+    source_url: null,
+    cover_url: null,
     ...overrides,
   };
 }
@@ -215,3 +225,70 @@ describe('EventDetailsPage — lotação e lista de espera', () => {
     expect(await screen.findByText(/evento esgotado/i)).toBeInTheDocument();
   });
 });
+
+describe('EventDetailsPage — lugares', () => {
+  beforeEach(() => {
+    getEventById.mockReset();
+    getPlaceEvents.mockReset().mockResolvedValue([]);
+    joinEvent.mockReset();
+  });
+
+  it('um lugar mostra os horários e o link para a fonte, sem inscrição', async () => {
+    getEventById.mockResolvedValue(makePlace({ id: 'evt-1' }));
+
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: 'Horários' })).toBeInTheDocument();
+    expect(screen.getByText('segunda-feira')).toBeInTheDocument();
+    expect(screen.getAllByText('11:30 a 22:00')).toHaveLength(2);
+    expect(screen.getByRole('link', { name: /ver no google maps/i })).toHaveAttribute(
+      'href',
+      'https://www.google.com/maps/place/parraxaxa',
+    );
+    expect(screen.queryByRole('button', { name: /^vou$/i })).toBeNull();
+    expect(screen.getByText('$$')).toBeInTheDocument();
+  });
+
+  it('um lugar lista os próximos eventos que acontecem lá', async () => {
+    getEventById.mockResolvedValue(makePlace({ id: 'evt-1' }));
+    getPlaceEvents.mockResolvedValue([
+      makeEvent({ id: 'evt-9', title: 'Forró no Parraxaxá', event_date: '2026-10-17T23:00:00Z' }),
+    ]);
+
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: /próximos eventos aqui/i })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /forró no parraxaxá/i })).toHaveAttribute(
+      'href',
+      '/events/evt-9',
+    );
+    expect(getPlaceEvents).toHaveBeenCalledWith('evt-1');
+  });
+
+  it('um evento num lugar leva ao lugar', async () => {
+    getEventById.mockResolvedValue(makeEvent({ place_id: 'place-1' }));
+
+    renderPage();
+
+    expect(await screen.findByRole('link', { name: /ver o lugar/i })).toHaveAttribute(
+      'href',
+      '/events/place-1',
+    );
+    expect(getPlaceEvents).not.toHaveBeenCalled();
+  });
+
+  it('um evento importado sem preço não se mostra como grátis', async () => {
+    getEventById.mockResolvedValue(
+      makeEvent({ price: null, source_url: 'https://www.sympla.com.br/evento/x/1' }),
+    );
+
+    renderPage();
+
+    expect(await screen.findByText('Preço a confirmar')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /ver na sympla/i })).toHaveAttribute(
+      'href',
+      'https://www.sympla.com.br/evento/x/1',
+    );
+  });
+});
+

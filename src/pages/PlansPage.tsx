@@ -5,17 +5,14 @@ import { useNavigate } from 'react-router-dom';
 import { listPlans } from '../services/flyerApi.ts';
 import type { PlanRead } from '../types/index.ts';
 import { formatApiError } from '../utils/apiError.ts';
+import { formatMoney } from '../utils/eventFormatters.ts';
 
 function formatPlanPrice(price: string | null, interval: string | null): string {
   if (price === null) return 'Grátis';
   const n = Number(price);
   if (!Number.isFinite(n)) return price;
-  const formatted = new Intl.NumberFormat('pt-PT', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(n);
   const suffix = interval ? `/${interval}` : '';
-  return `${formatted} €${suffix}`;
+  return `${formatMoney(n)}${suffix}`;
 }
 
 export default function PlansPage() {
