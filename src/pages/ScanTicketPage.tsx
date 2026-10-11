@@ -1,10 +1,11 @@
-import { ArrowLeft, CameraOff, CheckCircle2, XCircle } from 'lucide-react';
+import { CameraOff, CheckCircle2, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 import { scanTicket } from '../services/flyerApi.ts';
 import type { ScanResult } from '../types/index.ts';
 import { formatApiError } from '../utils/apiError.ts';
+import { BackButton } from '../components/navigation/BackButton.tsx';
 
 /** Volta ao modo de leitura sozinho, para dar para ler uma fila seguida. */
 const RESET_MS = 3000;
@@ -32,7 +33,6 @@ function nativeDetector(): BarcodeDetectorLike | null {
 
 export default function ScanTicketPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const [manualToken, setManualToken] = useState('');
@@ -152,14 +152,7 @@ export default function ScanTicketPage() {
 
   return (
     <div className="mx-auto max-w-lg space-y-4 px-4 py-6">
-      <button
-        type="button"
-        onClick={() => navigate(-1)}
-        className="inline-flex items-center gap-2 text-gray-600 transition hover:text-red-600"
-      >
-        <ArrowLeft className="h-5 w-5" />
-        Voltar
-      </button>
+      <BackButton className="inline-flex items-center gap-2 text-gray-600 transition hover:text-red-600" />
 
       <div className="overflow-hidden rounded-3xl border border-gray-100 bg-black shadow-sm">
         {cameraError ? (

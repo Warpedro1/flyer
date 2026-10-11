@@ -424,7 +424,7 @@ export default function CreateEventPage() {
           </div>
           <div>
             <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-              Preço (€)
+              Preço (R$)
             </label>
             <input
               id="price"

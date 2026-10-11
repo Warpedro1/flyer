@@ -245,7 +245,7 @@ describe('CreateEventPage (categoria e lugar)', () => {
     renderPage();
 
     await user.type(screen.getByLabelText(/título/i), 'Luau');
-    await user.selectOptions(screen.getByLabelText(/categoria/i), 'Praia e natureza');
+    await user.selectOptions(screen.getByLabelText(/categoria/i), 'Praia/Natureza');
     await user.type(screen.getByLabelText(/endereço/i), 'Lisboa');
     await user.click(screen.getByRole('button', { name: /criar evento/i }));
 

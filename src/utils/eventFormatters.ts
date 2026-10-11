@@ -1,3 +1,5 @@
+import type { SyntheticEvent } from 'react';
+
 import type { EventRead } from '../types/index.ts';
 
 export function pickCoverImage(event: EventRead): string | null {
@@ -58,3 +60,9 @@ export function formatRating(rating: string | null): string {
 
 export const PLACEHOLDER_IMAGE =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGVlMmU2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzZjNzU3ZCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5lbmh1bWEgaW1hZ2VtPC90ZXh0Pjwvc3ZnPg==';
+
+/** `onError` das imagens de capa: uma imagem da fonte que falhe dá lugar à de reserva. */
+export function showPlaceholder(event: SyntheticEvent<HTMLImageElement>): void {
+  const img = event.currentTarget;
+  if (img.getAttribute('src') !== PLACEHOLDER_IMAGE) img.src = PLACEHOLDER_IMAGE;
+}

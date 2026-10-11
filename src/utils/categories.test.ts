@@ -31,9 +31,12 @@ describe('taxonomia de categorias', () => {
     ]);
   });
 
-  it('mostra o rótulo de cada slug', () => {
-    expect(categoryLabel('praia_natureza')).toBe('Praia e natureza');
-    expect(categoryLabel('academia_exercicio')).toBe('Academia e exercício');
+  it('mostra o rótulo de cada slug, no formato A/B', () => {
+    expect(categoryLabel('tecnologia_negocios')).toBe('Tecnologia/Negócios');
+    expect(categoryLabel('musica_show')).toBe('Música/Show');
+    expect(categoryLabel('praia_natureza')).toBe('Praia/Natureza');
+    expect(categoryLabel('academia_exercicio')).toBe('Academia/Exercício');
+    expect(categoryLabel('outros')).toBe('Outros');
   });
 
   it('um valor fora da taxonomia (eventos antigos) aparece como Outros', () => {

@@ -38,7 +38,7 @@ describe('DiscoverFilters', () => {
     const { user, onChange } = setup({ ...DEFAULT_FILTERS, categories: ['jogos'] });
 
     await user.click(screen.getByRole('button', { name: /filtros/i }));
-    await user.click(screen.getByRole('button', { name: 'Praia e natureza' }));
+    await user.click(screen.getByRole('button', { name: 'Praia/Natureza' }));
     expect(onChange).toHaveBeenLastCalledWith({
       ...DEFAULT_FILTERS,
       categories: ['jogos', 'praia_natureza'],

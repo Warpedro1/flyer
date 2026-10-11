@@ -17,6 +17,7 @@ import {
   useNavigate,
 } from 'react-router-dom';
 
+import { useAppVersionCheck } from '../../hooks/useAppVersionCheck.ts';
 import { useAuth } from '../../hooks/useAuth.ts';
 import { isImmersivePath } from '../../utils/immersivePaths.ts';
 import { WingHeartLogo } from './WingHeartLogo.tsx';
@@ -120,6 +121,8 @@ const DEFAULT_AVATAR =
 
 export default function AppLayout() {
   const { user, loading, signOut } = useAuth();
+  // Recarrega uma aba antiga quando volta ao ecrã depois de um deploy.
+  useAppVersionCheck();
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);

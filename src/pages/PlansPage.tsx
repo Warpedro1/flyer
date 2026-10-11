@@ -1,11 +1,11 @@
-import { ArrowLeft, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { listPlans } from '../services/flyerApi.ts';
 import type { PlanRead } from '../types/index.ts';
 import { formatApiError } from '../utils/apiError.ts';
 import { formatMoney } from '../utils/eventFormatters.ts';
+import { BackButton } from '../components/navigation/BackButton.tsx';
 
 function formatPlanPrice(price: string | null, interval: string | null): string {
   if (price === null) return 'Grátis';
@@ -16,7 +16,6 @@ function formatPlanPrice(price: string | null, interval: string | null): string 
 }
 
 export default function PlansPage() {
-  const navigate = useNavigate();
   const [plans, setPlans] = useState<PlanRead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,14 +40,7 @@ export default function PlansPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-28 pt-4 md:pb-8">
       <div className="mx-auto max-w-6xl px-4">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="mb-6 inline-flex items-center gap-2 text-gray-600 hover:text-red-600"
-        >
-          <ArrowLeft className="h-5 w-5" />
-          Voltar
-        </button>
+        <BackButton className="mb-6 inline-flex items-center gap-2 text-gray-600 hover:text-red-600" />
 
         <div className="mb-10 text-center">
           <h1 className="text-3xl font-bold text-gray-900">Planos Flyer</h1>

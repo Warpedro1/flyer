@@ -58,17 +58,28 @@ function result(mode: DiscoverResult['mode']): DiscoverResult {
   return { events: [event('evt-1', 'Concerto no Tejo')], mode };
 }
 
-// O jsdom não tem IntersectionObserver: este guarda os callbacks para o teste
-// simular o sentinela do fim da lista a entrar no ecrã.
+// O jsdom não tem IntersectionObserver. Este imita o do browser: ao começar a observar
+// avisa logo com o estado atual (`sentinelVisible`), e guarda o callback para o teste
+// simular o sentinela a entrar no ecrã.
 type IoCallback = (entries: Array<{ isIntersecting: boolean }>) => void;
 const observers: IoCallback[] = [];
+let sentinelVisible = false;
 class FakeIntersectionObserver {
+  private readonly callback: IoCallback;
   constructor(callback: IoCallback) {
+    this.callback = callback;
     observers.push(callback);
   }
-  observe(): void {}
+  observe(): void {
+    const cb = this.callback;
+    queueMicrotask(() => cb([{ isIntersecting: sentinelVisible }]));
+  }
   unobserve(): void {}
   disconnect(): void {}
+}
+
+function page(from: number, count: number): EventRead[] {
+  return Array.from({ length: count }, (_, i) => event(`evt-${from + i}`, `Evento ${from + i}`));
 }
 
 function renderPage(url = '/') {
@@ -86,6 +97,7 @@ describe('DiscoverPage', () => {
   beforeEach(() => {
     discoverEventsWithMode.mockReset();
     observers.length = 0;
+    sentinelVisible = false;
     vi.stubGlobal('IntersectionObserver', FakeIntersectionObserver);
   });
 
@@ -164,6 +176,43 @@ describe('DiscoverPage', () => {
         expect.objectContaining({ kinds: ['event'], page: 1 }),
       ),
     );
+  });
+
+  it('num ecrã largo, com o fim da lista sempre visível, continua a carregar as páginas seguintes', async () => {
+    // A 1.ª página não chega para empurrar o sentinela para fora do ecrã: o observador
+    // nunca vê uma mudança. Tem de voltar a olhar depois de cada página.
+    sentinelVisible = true;
+    discoverEventsWithMode
+      .mockResolvedValueOnce({ events: page(0, 20), mode: 'personalized' })
+      .mockResolvedValueOnce({ events: page(20, 5), mode: 'personalized' });
+
+    renderPage();
+
+    expect(await screen.findByText('Evento 24')).toBeInTheDocument();
+    expect(discoverEventsWithMode).toHaveBeenCalledTimes(2);
+    expect(discoverEventsWithMode).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 }));
+  });
+
+  it('o botão "Carregar mais" pede a página seguinte', async () => {
+    discoverEventsWithMode
+      .mockResolvedValueOnce({ events: page(0, 20), mode: 'personalized' })
+      .mockResolvedValueOnce({ events: page(20, 3), mode: 'personalized' });
+    const user = userEvent.setup();
+
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: /carregar mais/i }));
+
+    expect(await screen.findByText('Evento 22')).toBeInTheDocument();
+    expect(discoverEventsWithMode).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 }));
+  });
+
+  it('no fim da lista diz que não há mais e esconde o botão', async () => {
+    discoverEventsWithMode.mockResolvedValueOnce({ events: page(0, 4), mode: 'personalized' });
+
+    renderPage();
+
+    expect(await screen.findByText(/não há mais/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /carregar mais/i })).toBeNull();
   });
 });
 

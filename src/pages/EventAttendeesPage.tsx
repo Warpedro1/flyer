@@ -1,6 +1,6 @@
-import { ArrowLeft, BellRing, QrCode, UserCheck, UserX, Users } from 'lucide-react';
+import { BellRing, QrCode, UserCheck, UserX, Users } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 
 import { useCountdown } from '../hooks/useCountdown.ts';
 import {
@@ -10,6 +10,7 @@ import {
 } from '../services/flyerApi.ts';
 import type { AttendeeListRead, RsvpWithProfile } from '../types/index.ts';
 import { formatApiError } from '../utils/apiError.ts';
+import { BackButton } from '../components/navigation/BackButton.tsx';
 
 /**
  * Recarrega a lista sozinha. Não é cosmético: cada leitura corre a varredura de
@@ -74,7 +75,6 @@ function Section({
 
 export default function EventAttendeesPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
 
   const [data, setData] = useState<AttendeeListRead | null>(null);
   const [loading, setLoading] = useState(true);
@@ -141,14 +141,7 @@ export default function EventAttendeesPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
       <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-gray-600 transition hover:text-red-600"
-        >
-          <ArrowLeft className="h-5 w-5" />
-          Voltar
-        </button>
+        <BackButton className="inline-flex items-center gap-2 text-gray-600 transition hover:text-red-600" />
         {id && (
           <Link
             to={`/events/${id}/scan`}

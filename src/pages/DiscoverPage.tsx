@@ -105,9 +105,12 @@ export default function DiscoverPage() {
   // serve: quem faz scroll é o <main> do AppLayout, não a janela.
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
+  // Volta a observar depois de cada página: o observador só avisa quando o sentinela
+  // muda de estado, e num ecrã largo ele continua visível depois da 1.ª página (a lista
+  // parava aí). Ao começar a observar, o browser avisa logo com o estado atual.
   useEffect(() => {
     const sentinel = sentinelRef.current;
-    if (!sentinel) return;
+    if (!sentinel || discoverLoading || !hasMore) return;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) loadMoreRef.current();
@@ -116,7 +119,7 @@ export default function DiscoverPage() {
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, []);
+  }, [events.length, discoverLoading, hasMore]);
 
   return (
     <div className="p-4 pb-28 sm:p-8 md:pb-8">
@@ -236,6 +239,18 @@ export default function DiscoverPage() {
 
       <div ref={sentinelRef} aria-hidden="true" />
 
+      {hasMore && !discoverLoading && events.length > 0 && (
+        <div className="flex justify-center py-6">
+          <button
+            type="button"
+            onClick={loadMore}
+            className="rounded-2xl border border-gray-200 bg-white px-6 py-3 font-semibold text-gray-700 shadow-sm transition hover:border-red-200 hover:text-red-600"
+          >
+            Carregar mais
+          </button>
+        </div>
+      )}
+
       {discoverLoading && events.length > 0 && (
         <div className="flex flex-col items-center py-8">
           <div
@@ -267,7 +282,7 @@ export default function DiscoverPage() {
         )}
 
       {!hasMore && events.length > 0 && (
-        <p className="py-8 text-center text-sm text-gray-500">Chegaste ao fim da lista.</p>
+        <p className="py-8 text-center text-sm text-gray-500">Não há mais resultados por aqui.</p>
       )}
     </div>
   );
