@@ -21,5 +21,8 @@ export default defineConfig({
     globals: true, // Permite usar describe/it/expect sem ter de importar em cada ficheiro
     environment: 'jsdom', // Usa o JSDOM para simular o browser
     setupFiles: './src/setupTests.ts', // Ficheiro que corre antes de todos os testes
+    // Por omissão o Vitest troca o conteúdo dos .css por vazio (também com ?raw). O
+    // App.css tem regras de layout testadas em src/styles/appCss.test.ts.
+    css: { include: [/App\.css/] },
   },
 });

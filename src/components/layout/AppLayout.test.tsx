@@ -60,4 +60,18 @@ describe('AppLayout', () => {
     renderAppWithChild(childMarker);
     expect(screen.getByText(childMarker)).toBeInTheDocument();
   });
+
+  it('a barra de navegação do telemóvel fica fora da área com scroll, logo abaixo dela', () => {
+    // Se a barra estivesse dentro do <main>, ou posicionada por cima dele, mexia-se
+    // com o scroll. Como irmã do <main> na mesma coluna, fica sempre no fundo.
+    renderAppWithChild('outlet-stub');
+
+    const main = screen.getByRole('main');
+    const nav = screen.getByRole('navigation', { name: /navegação principal/i });
+
+    expect(main.contains(nav)).toBe(false);
+    expect(nav.parentElement).toBe(main.parentElement);
+    expect(main.nextElementSibling).toBe(nav);
+  });
 });
+

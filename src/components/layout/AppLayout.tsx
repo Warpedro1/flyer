@@ -255,35 +255,36 @@ export default function AppLayout() {
           </header>
         )}
 
-        <main
-          className={`relative min-h-0 flex-1 overflow-y-auto scroll-smooth bg-gray-50/50 ${
-            !immersive ? 'pb-24 md:pb-0' : ''
-          }`}
-        >
+        <main className="relative min-h-0 flex-1 overflow-y-auto overscroll-y-contain scroll-smooth bg-gray-50/50">
           <Outlet />
         </main>
-      </div>
 
-      {!immersive && (
-        <nav className="absolute bottom-0 z-20 flex w-full items-center justify-around border-t border-gray-200 bg-white px-6 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] md:hidden">
-          <MobileNavButton
-            to="/"
-            end
-            icon={<Compass className="h-6 w-6" />}
-            label="Descobrir"
-          />
-          <MobileNavButton
-            to="/chat"
-            icon={<MessageCircle className="w-6 h-6" />}
-            label="Chat IA"
-          />
-          <MobileNavButton
-            to="/profile"
-            avatarUrl={avatarUrl}
-            label="Perfil"
-          />
-        </nav>
-      )}
+        {/* A barra fica na coluna, logo abaixo do <main>, e não por cima dele: assim
+            nunca acompanha o scroll nem tapa o fim do conteúdo. */}
+        {!immersive && (
+          <nav
+            aria-label="Navegação principal"
+            className="z-20 flex w-full shrink-0 items-center justify-around border-t border-gray-200 bg-white px-6 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] md:hidden"
+          >
+            <MobileNavButton
+              to="/"
+              end
+              icon={<Compass className="h-6 w-6" />}
+              label="Descobrir"
+            />
+            <MobileNavButton
+              to="/chat"
+              icon={<MessageCircle className="w-6 h-6" />}
+              label="Chat IA"
+            />
+            <MobileNavButton
+              to="/profile"
+              avatarUrl={avatarUrl}
+              label="Perfil"
+            />
+          </nav>
+        )}
+      </div>
     </div>
   );
 }

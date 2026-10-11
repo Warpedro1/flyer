@@ -85,17 +85,21 @@ export default function DiscoverPage() {
   const loadMoreRef = useRef(loadMore);
   loadMoreRef.current = loadMore;
 
+  // O sentinela no fim da lista avisa quando entra no ecrã. Um listener no window não
+  // serve: quem faz scroll é o <main> do AppLayout, não a janela.
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
-    const onScroll = () => {
-      if (
-        window.innerHeight + window.scrollY >=
-        document.documentElement.scrollHeight - 800
-      ) {
-        loadMoreRef.current();
-      }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) loadMoreRef.current();
+      },
+      { rootMargin: '800px 0px' },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
   }, []);
 
   return (
@@ -222,6 +226,8 @@ export default function DiscoverPage() {
           />
         ))}
       </div>
+
+      <div ref={sentinelRef} aria-hidden="true" />
 
       {discoverLoading && events.length > 0 && (
         <div className="flex flex-col items-center py-8">
