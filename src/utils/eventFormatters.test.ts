@@ -32,6 +32,10 @@ function item(overrides: Partial<EventRead> = {}): EventRead {
     price_level: null,
     source_url: null,
     cover_url: null,
+    ends_at: null,
+    checkin_opens_at: null,
+    checkin_closes_at: null,
+    checkin_status: null,
     ...overrides,
   };
 }

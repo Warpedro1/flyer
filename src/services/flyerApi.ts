@@ -12,6 +12,8 @@ import type {
   DiscoverRequest,
   DiscoverResult,
   EventCreate,
+  EventEditRead,
+  EventUpdate,
   EventRead,
   FollowAction,
   FollowCreatedResponse,
@@ -114,6 +116,29 @@ export async function listPlans(): Promise<PlanRead[]> {
 
 export async function createEvent(req: EventCreate): Promise<EventRead> {
   const { data } = await apiClient.post<EventRead>('/events/', req);
+  return data;
+}
+
+/** Formulário de edição: valores guardados e caminhos das imagens (só o criador). */
+export async function getEventForEdit(eventId: string): Promise<EventEditRead> {
+  const { data } = await apiClient.get<EventEditRead>(`/events/${encodeURIComponent(eventId)}/edit`);
+  return data;
+}
+
+export async function updateEvent(eventId: string, req: EventUpdate): Promise<EventRead> {
+  const { data } = await apiClient.put<EventRead>(`/events/${encodeURIComponent(eventId)}`, req);
+  return data;
+}
+
+/** O dono abre o check-in agora (fecha no fim do evento). */
+export async function openCheckin(eventId: string): Promise<EventRead> {
+  const { data } = await apiClient.post<EventRead>(`/events/${encodeURIComponent(eventId)}/checkin/open`);
+  return data;
+}
+
+/** O dono fecha o check-in antes do fim. */
+export async function closeCheckin(eventId: string): Promise<EventRead> {
+  const { data } = await apiClient.post<EventRead>(`/events/${encodeURIComponent(eventId)}/checkin/close`);
   return data;
 }
 

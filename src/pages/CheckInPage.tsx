@@ -8,6 +8,7 @@ import { useEffectiveGeo } from '../hooks/useEffectiveGeo.ts';
 import { checkIn, discoverEvents } from '../services/flyerApi.ts';
 import type { EventRead, TrophyRead } from '../types/index.ts';
 import { formatApiError } from '../utils/apiError.ts';
+import { checkinAllowed, checkinButtonText } from '../utils/checkinLabel.ts';
 import { CHECKIN_DISCOVER_RADIUS_KM, FALLBACK_GEO } from '../utils/constants.ts';
 import { friendlyGeoError } from '../utils/geoMessages.ts';
 
@@ -187,11 +188,11 @@ export default function CheckInPage() {
                 <button
                   type="button"
                   className="w-full rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
-                  disabled={checkingId !== null || !canCheckInPhysically}
+                  disabled={checkingId !== null || !canCheckInPhysically || !checkinAllowed(event)}
                   title={!canCheckInPhysically ? 'Ativa o GPS para fazer check-in' : undefined}
                   onClick={() => void handleCheckIn(event.id)}
                 >
-                  {checkingId === event.id ? 'A confirmar…' : 'Fazer check-in'}
+                  {checkingId === event.id ? 'A confirmar…' : checkinButtonText(event)}
                 </button>
               }
             />

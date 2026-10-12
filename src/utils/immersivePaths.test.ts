@@ -8,6 +8,8 @@ describe('isImmersivePath', () => {
     expect(isImmersivePath('/events/abc/scan')).toBe(true);
     expect(isImmersivePath('/plans')).toBe(true);
     expect(isImmersivePath('/events/new')).toBe(true);
+    // Editar é como criar: um formulário de ecrã inteiro.
+    expect(isImmersivePath('/events/abc/edit')).toBe(true);
   });
 
   it('mantém a gestão de participantes dentro do layout normal', () => {

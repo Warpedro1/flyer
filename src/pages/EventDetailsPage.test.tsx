@@ -14,6 +14,8 @@ const checkIn = vi.hoisted(() => vi.fn());
 const joinEvent = vi.hoisted(() => vi.fn());
 const leaveEvent = vi.hoisted(() => vi.fn());
 const getPlaceEvents = vi.hoisted(() => vi.fn());
+const openCheckin = vi.hoisted(() => vi.fn());
+const closeCheckin = vi.hoisted(() => vi.fn());
 
 vi.mock('../services/flyerApi.ts', () => ({
   getEventById,
@@ -21,6 +23,8 @@ vi.mock('../services/flyerApi.ts', () => ({
   joinEvent,
   leaveEvent,
   getPlaceEvents,
+  openCheckin,
+  closeCheckin,
 }));
 vi.mock('../hooks/useEffectiveGeo.ts', () => ({
   useEffectiveGeo: () => ({
@@ -67,6 +71,10 @@ function event(capacityState: EventCapacityRead | null, overrides: Partial<Event
     price_level: null,
     source_url: null,
     cover_url: null,
+    ends_at: null,
+    checkin_opens_at: null,
+    checkin_closes_at: null,
+    checkin_status: 'open',
     ...overrides,
   };
 }
@@ -348,5 +356,119 @@ describe('EventDetailsPage — troféu do check-in', () => {
       'https://signed/user-9/trofeu.png',
     );
     expect(screen.getByText('Dançaste frevo')).toBeInTheDocument();
+  });
+});
+
+describe('EventDetailsPage — janela de check-in', () => {
+  beforeEach(() => {
+    getEventById.mockReset();
+    getPlaceEvents.mockReset().mockResolvedValue([]);
+    checkIn.mockReset();
+    openCheckin.mockReset();
+    closeCheckin.mockReset();
+  });
+
+  // Horas em UTC, como o backend devolve: 20:00 e 23:00 em Recife.
+  const WINDOW = {
+    event_date: '2026-10-16T23:00:00+00:00',
+    ends_at: '2026-10-17T02:00:00+00:00',
+    checkin_opens_at: '2026-10-16T23:00:00+00:00',
+    checkin_closes_at: '2026-10-17T02:00:00+00:00',
+  };
+
+  it('antes de abrir diz quando abre e não deixa fazer check-in', async () => {
+    getEventById.mockResolvedValue(event(null, { ...WINDOW, checkin_status: 'not_yet' }));
+
+    renderPage();
+
+    expect(await screen.findByText(/check-in abre às 20:00 de 16\/10/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /check-in no evento/i })).toBeDisabled();
+  });
+
+  it('aberto diz até quando', async () => {
+    getEventById.mockResolvedValue(event(null, { ...WINDOW, checkin_status: 'open' }));
+
+    renderPage();
+
+    expect(await screen.findByText(/check-in aberto até à?s 23:00/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /check-in no evento/i })).toBeEnabled();
+  });
+
+  it('fechado não deixa fazer check-in', async () => {
+    getEventById.mockResolvedValue(event(null, { ...WINDOW, checkin_status: 'closed' }));
+
+    renderPage();
+
+    expect(await screen.findByText(/check-in fechado/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /check-in no evento/i })).toBeDisabled();
+  });
+
+  it('um lugar fechado diz que o check-in é no horário de funcionamento', async () => {
+    getEventById.mockResolvedValue(makePlace({ id: 'evt-1', checkin_status: 'closed' }));
+
+    renderPage();
+
+    expect(await screen.findByText(/horário de funcionamento/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /check-in no lugar/i })).toBeDisabled();
+  });
+
+  it('o dono abre o check-in antes da hora', async () => {
+    const user = userEvent.setup();
+    getEventById
+      .mockResolvedValueOnce(event(null, { ...WINDOW, creator_id: 'user-1', checkin_status: 'not_yet' }))
+      .mockResolvedValueOnce(event(null, { ...WINDOW, creator_id: 'user-1', checkin_status: 'open' }));
+    openCheckin.mockResolvedValue({});
+
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: /abrir check-in agora/i }));
+
+    await waitFor(() => expect(openCheckin).toHaveBeenCalledWith('evt-1'));
+    expect(await screen.findByRole('button', { name: /fechar check-in/i })).toBeInTheDocument();
+  });
+
+  it('o dono fecha o check-in', async () => {
+    const user = userEvent.setup();
+    getEventById
+      .mockResolvedValueOnce(event(null, { ...WINDOW, creator_id: 'user-1', checkin_status: 'open' }))
+      .mockResolvedValueOnce(event(null, { ...WINDOW, creator_id: 'user-1', checkin_status: 'closed' }));
+    closeCheckin.mockResolvedValue({});
+
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: /fechar check-in/i }));
+
+    await waitFor(() => expect(closeCheckin).toHaveBeenCalledWith('evt-1'));
+    expect(await screen.findByText(/check-in fechado/i)).toBeInTheDocument();
+  });
+
+  it('o dono pode editar o evento', async () => {
+    getEventById.mockResolvedValue(event(null, { ...WINDOW, creator_id: 'user-1' }));
+
+    renderPage();
+
+    expect(await screen.findByRole('link', { name: /editar evento/i })).toHaveAttribute(
+      'href',
+      '/events/evt-1/edit',
+    );
+  });
+
+  it('quem não é dono não vê editar nem abrir/fechar', async () => {
+    getEventById.mockResolvedValue(event(null, { ...WINDOW, creator_id: 'outra', checkin_status: 'not_yet' }));
+
+    renderPage();
+    await screen.findByText(/check-in abre/i);
+
+    expect(screen.queryByRole('link', { name: /editar evento/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /abrir check-in agora/i })).toBeNull();
+  });
+
+  it('um evento importado não se edita', async () => {
+    getEventById.mockResolvedValue(
+      event(null, { ...WINDOW, creator_id: 'user-1', source_url: 'https://www.sympla.com.br/evento/x' }),
+    );
+
+    renderPage();
+    await screen.findByText(/check-in aberto/i);
+
+    expect(screen.queryByRole('link', { name: /editar evento/i })).toBeNull();
   });
 });
