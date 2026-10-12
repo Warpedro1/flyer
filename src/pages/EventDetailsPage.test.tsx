@@ -241,6 +241,19 @@ describe('EventDetailsPage — navegação', () => {
     expect(back).toHaveTextContent('Voltar');
     expect(back.closest('[data-testid="event-topbar"]')).toHaveClass('sticky');
   });
+
+  it('a barra dos botões fica no fluxo da página e não tapa o fim do conteúdo', async () => {
+    // Com position: fixed, o fim da página (ex.: o troféu ganho) ficava por baixo dos
+    // botões "Vou" e "Check-in" no telemóvel. Sticky ocupa o seu espaço no fim.
+    getEventById.mockResolvedValue(makeEvent());
+
+    renderPage();
+
+    const checkInButton = await screen.findByRole('button', { name: /check-in no evento/i });
+    const bar = checkInButton.closest('[data-testid="event-actions"]');
+    expect(bar).toHaveClass('sticky');
+    expect(bar).not.toHaveClass('fixed');
+  });
 });
 
 describe('EventDetailsPage — lugares', () => {
@@ -309,3 +322,31 @@ describe('EventDetailsPage — lugares', () => {
   });
 });
 
+
+describe('EventDetailsPage — troféu do check-in', () => {
+  beforeEach(() => {
+    getEventById.mockReset().mockResolvedValue(event(null));
+    checkIn.mockReset();
+  });
+
+  it('mostra o troféu ganho com o ícone que o criador escolheu', async () => {
+    const user = userEvent.setup();
+    checkIn.mockResolvedValue({
+      id: 'tr-1',
+      template_id: 'tpl-1',
+      name: 'Passista',
+      description: 'Dançaste frevo',
+      icon_url: 'https://signed/user-9/trofeu.png',
+      acquired_at: '2026-10-12T20:00:00Z',
+    });
+
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: /check-in no evento/i }));
+
+    expect(await screen.findByRole('img', { name: 'Passista' })).toHaveAttribute(
+      'src',
+      'https://signed/user-9/trofeu.png',
+    );
+    expect(screen.getByText('Dançaste frevo')).toBeInTheDocument();
+  });
+});

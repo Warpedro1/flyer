@@ -13,9 +13,16 @@ import CreateEventPage from './CreateEventPage.tsx';
 const createEvent = vi.hoisted(() => vi.fn());
 const uploadEventMedia = vi.hoisted(() => vi.fn());
 const discoverEvents = vi.hoisted(() => vi.fn());
+const uploadTrophyIcon = vi.hoisted(() => vi.fn());
 
 vi.mock('../services/flyerApi.ts', () => ({ createEvent, discoverEvents }));
-vi.mock('../services/storage.ts', () => ({ uploadEventMedia }));
+// As constantes (formatos aceites) ficam reais; só os uploads são simulados.
+vi.mock('../lib/supabase.ts', () => ({ supabase: {} }));
+vi.mock('../services/storage.ts', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../services/storage.ts')>()),
+  uploadEventMedia,
+  uploadTrophyIcon,
+}));
 vi.mock('../hooks/useAuth.ts', () => ({
   useAuth: () => ({
     user: { id: 'user-1' },
@@ -291,3 +298,134 @@ describe('CreateEventPage (categoria e lugar)', () => {
   });
 });
 
+
+describe('CreateEventPage (troféu do check-in)', () => {
+  const createObjectURL = vi.fn(() => 'blob:preview-1');
+  const revokeObjectURL = vi.fn();
+
+  beforeEach(() => {
+    createEvent.mockReset().mockResolvedValue({ id: 'e1' });
+    uploadTrophyIcon.mockReset();
+    createObjectURL.mockClear();
+    revokeObjectURL.mockClear();
+    // O jsdom não tem estas duas funções.
+    Object.assign(URL, { createObjectURL, revokeObjectURL });
+    mockGeocodeHit();
+  });
+
+  async function fillRequired(user: ReturnType<typeof userEvent.setup>) {
+    await user.type(screen.getByLabelText(/^título/i), 'Aula de frevo');
+    await user.type(screen.getByLabelText(/endereço/i), 'Lisboa');
+  }
+
+  const icon = () => new File([new Uint8Array([1])], 'trofeu.png', { type: 'image/png' });
+
+  it('envia o nome, a descrição e o ícone personalizados', async () => {
+    const user = userEvent.setup();
+    uploadTrophyIcon.mockResolvedValue('user-1/trofeu.png');
+
+    renderPage();
+    await fillRequired(user);
+    await user.type(screen.getByLabelText(/nome do troféu/i), 'Passista');
+    await user.type(screen.getByLabelText(/descrição do troféu/i), 'Dançaste frevo');
+    await user.upload(screen.getByLabelText(/ícone do troféu/i), icon());
+    await screen.findByRole('img', { name: /pré-visualização do ícone/i });
+    await user.click(screen.getByRole('button', { name: /criar evento/i }));
+
+    await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
+    expect(uploadTrophyIcon).toHaveBeenCalledWith('user-1', expect.any(File));
+    expect(createEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        trophy: { name: 'Passista', description: 'Dançaste frevo', icon_url: 'user-1/trofeu.png' },
+      }),
+    );
+  });
+
+  it('só com o ícone, o nome e a descrição ficam por omissão', async () => {
+    const user = userEvent.setup();
+    uploadTrophyIcon.mockResolvedValue('user-1/trofeu.png');
+
+    renderPage();
+    await fillRequired(user);
+    await user.upload(screen.getByLabelText(/ícone do troféu/i), icon());
+    await screen.findByRole('img', { name: /pré-visualização do ícone/i });
+    await user.click(screen.getByRole('button', { name: /criar evento/i }));
+
+    await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
+    expect(createEvent.mock.calls[0][0].trophy).toEqual({
+      name: null,
+      description: null,
+      icon_url: 'user-1/trofeu.png',
+    });
+  });
+
+  it('sem nada preenchido não manda troféu (o backend dá o troféu padrão)', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+    await fillRequired(user);
+    await user.click(screen.getByRole('button', { name: /criar evento/i }));
+
+    await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
+    expect(createEvent.mock.calls[0][0].trophy ?? null).toBeNull();
+  });
+
+  it('diz que o troféu padrão é "Presença: <título>"', () => {
+    renderPage();
+
+    expect(screen.getByText(/presença: <título do evento>/i)).toBeInTheDocument();
+  });
+
+  it('mostra o erro do upload e não manda o ícone', async () => {
+    const user = userEvent.setup();
+    uploadTrophyIcon.mockRejectedValue(new Error('O ícone tem de ser uma imagem PNG, JPG, WebP ou GIF.'));
+
+    renderPage();
+    await fillRequired(user);
+    await user.upload(screen.getByLabelText(/ícone do troféu/i), icon());
+
+    expect(await screen.findByText(/o ícone tem de ser uma imagem/i)).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: /pré-visualização do ícone/i })).toBeNull();
+    await user.click(screen.getByRole('button', { name: /criar evento/i }));
+    await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
+    expect(createEvent.mock.calls[0][0].trophy ?? null).toBeNull();
+  });
+
+  it('não deixa criar o evento enquanto o ícone está a ser enviado', async () => {
+    const user = userEvent.setup();
+    uploadTrophyIcon.mockReturnValue(new Promise(() => {}));
+
+    renderPage();
+    await fillRequired(user);
+    await user.upload(screen.getByLabelText(/ícone do troféu/i), icon());
+
+    expect(await screen.findByText(/a enviar o ícone/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /criar evento/i })).toBeDisabled();
+  });
+
+  it('remover o ícone volta ao ícone do Flyer e liberta a pré-visualização', async () => {
+    const user = userEvent.setup();
+    uploadTrophyIcon.mockResolvedValue('user-1/trofeu.png');
+
+    renderPage();
+    await fillRequired(user);
+    await user.upload(screen.getByLabelText(/ícone do troféu/i), icon());
+    await screen.findByRole('img', { name: /pré-visualização do ícone/i });
+    await user.click(screen.getByRole('button', { name: /remover ícone/i }));
+
+    expect(screen.queryByRole('img', { name: /pré-visualização do ícone/i })).toBeNull();
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:preview-1');
+    await user.click(screen.getByRole('button', { name: /criar evento/i }));
+    await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
+    expect(createEvent.mock.calls[0][0].trophy ?? null).toBeNull();
+  });
+
+  it('o seletor do ícone só aceita os formatos que o backend aceita', () => {
+    renderPage();
+
+    expect(screen.getByLabelText(/ícone do troféu/i)).toHaveAttribute(
+      'accept',
+      'image/png,image/jpeg,image/webp,image/gif',
+    );
+  });
+});

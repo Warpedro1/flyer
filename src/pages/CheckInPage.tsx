@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 
 import EventMap from '../components/map/EventMap.tsx';
 import { EventFeedCard } from '../components/ui/EventFeedCard.tsx';
+import { TrophyIcon } from '../components/ui/TrophyIcon.tsx';
 import { useEffectiveGeo } from '../hooks/useEffectiveGeo.ts';
 import { checkIn, discoverEvents } from '../services/flyerApi.ts';
 import type { EventRead, TrophyRead } from '../types/index.ts';
@@ -160,14 +161,12 @@ export default function CheckInPage() {
         )}
 
         {trophy && (
-          <div className="mb-4 rounded-2xl border border-green-200 bg-green-50 p-4 text-green-900">
-            <strong>Troféu desbloqueado:</strong> {trophy.name}
-            {trophy.description && (
-              <>
-                <br />
-                <span className="text-sm">{trophy.description}</span>
-              </>
-            )}
+          <div className="mb-4 flex items-center gap-4 rounded-2xl border border-green-200 bg-green-50 p-4 text-green-900">
+            <TrophyIcon iconUrl={trophy.icon_url} name={trophy.name} className="h-14 w-14 shrink-0" />
+            <div className="min-w-0">
+              <strong>Troféu desbloqueado:</strong> {trophy.name}
+              {trophy.description && <p className="mt-1 text-sm">{trophy.description}</p>}
+            </div>
           </div>
         )}
       </div>
