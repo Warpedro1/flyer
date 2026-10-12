@@ -1,8 +1,9 @@
 import axios from 'axios';
-import { ArrowLeft, BellRing, Clock, ExternalLink, Heart, MapPin, QrCode, Share2, Users } from 'lucide-react';
+import { BellRing, Clock, ExternalLink, Heart, MapPin, QrCode, Share2, Users } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 
+import { BackButton } from '../components/navigation/BackButton.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
 import { useEffectiveGeo } from '../hooks/useEffectiveGeo.ts';
 import { checkIn, getEventById, getPlaceEvents, joinEvent, leaveEvent } from '../services/flyerApi.ts';
@@ -15,6 +16,7 @@ import {
   formatRating,
   pickCoverImage,
   PLACEHOLDER_IMAGE,
+  showPlaceholder,
 } from '../utils/eventFormatters.ts';
 
 /** Rótulo do link para a página do item na fonte. */
@@ -26,7 +28,6 @@ function sourceLinkLabel(url: string): string {
 
 export default function EventDetailsPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const {
     latitude,
     longitude,
@@ -186,14 +187,7 @@ export default function EventDetailsPage() {
   if (error || !event) {
     return (
       <div className="p-6">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="mb-4 inline-flex items-center gap-2 text-gray-600 hover:text-red-600"
-        >
-          <ArrowLeft className="h-5 w-5" />
-          Voltar
-        </button>
+        <BackButton className="mb-4 inline-flex items-center gap-2 text-gray-600 hover:text-red-600" />
         <p className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800">{error ?? 'Evento não encontrado.'}</p>
       </div>
     );
@@ -247,18 +241,14 @@ export default function EventDetailsPage() {
 
   return (
     <div className="pb-28 md:pb-6">
-      <div className="relative h-72 w-full sm:h-96">
-        <img src={cover} alt="" className="h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 to-transparent" />
-        <div className="absolute left-0 right-0 top-0 flex items-center justify-between p-4">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="rounded-full bg-white/90 p-2.5 text-gray-800 shadow-md backdrop-blur transition hover:bg-white"
-            aria-label="Voltar"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
+      {/* Barra fixa no topo: o Voltar não desaparece com o scroll (estas páginas não têm
+          a barra de navegação de baixo). Fica por cima da capa, com altura zero. */}
+      <div
+        data-testid="event-topbar"
+        className="sticky top-0 z-30 h-0 overflow-visible"
+      >
+        <div className="flex items-center justify-between p-4 pt-[max(1rem,env(safe-area-inset-top))]">
+          <BackButton />
           <div className="flex gap-2">
             <button
               type="button"
@@ -277,6 +267,16 @@ export default function EventDetailsPage() {
             </button>
           </div>
         </div>
+      </div>
+      <div className="relative h-72 w-full sm:h-96">
+        <img
+          referrerPolicy="no-referrer"
+          src={cover}
+          alt=""
+          onError={showPlaceholder}
+          className="h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 to-transparent" />
         <div className="absolute left-4 top-20 flex flex-wrap gap-2">
           <span className="rounded-full bg-gray-900/80 px-3 py-1 text-xs font-bold text-white shadow">
             {isPlace ? 'Lugar' : 'Evento'}

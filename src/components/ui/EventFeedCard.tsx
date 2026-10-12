@@ -8,6 +8,7 @@ import {
   formatRating,
   pickCoverImage,
   PLACEHOLDER_IMAGE,
+  showPlaceholder,
 } from '../../utils/eventFormatters.ts';
 
 export interface EventFeedCardProps {
@@ -43,8 +44,13 @@ export function EventFeedCard({ event, onOpen, footer }: EventFeedCardProps) {
       tabIndex={onOpen ? 0 : undefined}
     >
       <img
+        // As imagens do Google recusam alguns pedidos com referrer de outro site. Antes
+        // do src: o browser começa a descarregar assim que o src é aplicado.
+        referrerPolicy="no-referrer"
+        loading="lazy"
         src={cover}
         alt=""
+        onError={showPlaceholder}
         className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-gray-900/95 via-gray-900/30 to-transparent" />

@@ -1,12 +1,13 @@
-import { ArrowLeft, CheckCircle2, Clock, Users } from 'lucide-react';
+import { CheckCircle2, Clock, Users } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 import { useCountdown } from '../hooks/useCountdown.ts';
 import { getMyRsvp, getRsvpQrToken } from '../services/flyerApi.ts';
 import type { RsvpRead } from '../types/index.ts';
 import { formatApiError } from '../utils/apiError.ts';
+import { BackButton } from '../components/navigation/BackButton.tsx';
 
 /** O token vive ~45s no backend; renovar antes disso evita mostrar um QR morto. */
 const REFRESH_MS = 30_000;
@@ -16,7 +17,6 @@ const SHOWS_QR: RsvpRead['status'][] = ['confirmed', 'called', 'waitlisted', 'no
 
 export default function MyTicketPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
 
   const [rsvp, setRsvp] = useState<RsvpRead | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
@@ -107,14 +107,7 @@ export default function MyTicketPage() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
-      <button
-        type="button"
-        onClick={() => navigate(-1)}
-        className="mb-4 inline-flex items-center gap-2 text-gray-600 transition hover:text-red-600"
-      >
-        <ArrowLeft className="h-5 w-5" />
-        Voltar
-      </button>
+      <BackButton className="mb-4 inline-flex items-center gap-2 text-gray-600 transition hover:text-red-600" />
 
       {error && (
         <p className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800">

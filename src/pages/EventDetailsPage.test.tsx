@@ -226,6 +226,23 @@ describe('EventDetailsPage — lotação e lista de espera', () => {
   });
 });
 
+describe('EventDetailsPage — navegação', () => {
+  beforeEach(() => {
+    getEventById.mockReset();
+    getPlaceEvents.mockReset().mockResolvedValue([]);
+  });
+
+  it('tem um botão "Voltar" com texto, numa barra que fica no topo ao fazer scroll', async () => {
+    getEventById.mockResolvedValue(makeEvent());
+
+    renderPage();
+
+    const back = await screen.findByRole('button', { name: /voltar/i });
+    expect(back).toHaveTextContent('Voltar');
+    expect(back.closest('[data-testid="event-topbar"]')).toHaveClass('sticky');
+  });
+});
+
 describe('EventDetailsPage — lugares', () => {
   beforeEach(() => {
     getEventById.mockReset();
