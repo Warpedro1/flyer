@@ -229,3 +229,53 @@ export async function scanTicket(eventId: string, token: string): Promise<ScanRe
   );
   return data;
 }
+
+/** Segundo fator do login com senha (backend: /auth/email-code). */
+export interface EmailCodeStatus {
+  required: boolean;
+  verified: boolean;
+}
+
+export async function getEmailCodeStatus(): Promise<EmailCodeStatus> {
+  const { data } = await apiClient.get<EmailCodeStatus>('/auth/email-code/status');
+  return data;
+}
+
+/** O backend pede ao Supabase que envie o código para o e-mail da conta. */
+export async function sendEmailCode(): Promise<void> {
+  await apiClient.post('/auth/email-code/send');
+}
+
+export async function verifyEmailCode(code: string): Promise<void> {
+  await apiClient.post('/auth/email-code/verify', { code });
+}
+
+/** Cadastro por e-mail, pelo backend: valida e diz se o e-mail, o CPF ou o celular já têm conta. */
+export interface SignUpRequest {
+  name: string;
+  email: string;
+  cpf: string;
+  phone: string;
+  password: string;
+}
+
+export async function signUpWithEmail(req: SignUpRequest): Promise<void> {
+  await apiClient.post('/auth/signup', req);
+}
+
+/** CPF e celular da própria conta (mascarados) e se já estão preenchidos. */
+export interface ProfileStatus {
+  complete: boolean;
+  cpf_masked: string | null;
+  phone_masked: string | null;
+}
+
+export async function getProfileStatus(): Promise<ProfileStatus> {
+  const { data } = await apiClient.get<ProfileStatus>('/auth/profile/status');
+  return data;
+}
+
+/** Completa o cadastro (contas Google, no 1.º acesso). */
+export async function completeProfileIdentity(req: { cpf: string; phone: string }): Promise<void> {
+  await apiClient.put('/auth/profile/identity', req);
+}

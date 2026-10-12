@@ -19,6 +19,7 @@ import {
 
 import { useAppVersionCheck } from '../../hooks/useAppVersionCheck.ts';
 import { useAuth } from '../../hooks/useAuth.ts';
+import { useAccountGate } from '../../hooks/useAccountGate.ts';
 import { isImmersivePath } from '../../utils/immersivePaths.ts';
 import { WingHeartLogo } from './WingHeartLogo.tsx';
 
@@ -120,14 +121,15 @@ const DEFAULT_AVATAR =
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
 
 export default function AppLayout() {
-  const { user, loading, signOut } = useAuth();
+  const { user, session, loading, signOut } = useAuth();
+  const gate = useAccountGate(session?.access_token, user?.id);
   // Recarrega uma aba antiga quando volta ao ecrã depois de um deploy.
   useAppVersionCheck();
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
 
-  if (loading) {
+  if (loading || (user && gate === 'checking')) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div
@@ -141,6 +143,13 @@ export default function AppLayout() {
 
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (gate === 'needs_code') {
+    return <Navigate to="/login/code" replace />;
+  }
+  if (gate === 'needs_profile') {
+    return <Navigate to="/complete-profile" replace />;
   }
 
   const immersive = isImmersivePath(location.pathname);
