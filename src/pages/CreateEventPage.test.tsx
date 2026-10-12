@@ -43,6 +43,12 @@ function mockGeocodeHit() {
   );
 }
 
+/** Início e fim são obrigatórios (decisão 2026-10-12). */
+function fillWhen(start = '2026-10-16T20:00', end = '2026-10-16T23:00') {
+  fireEvent.change(screen.getByLabelText(/início do evento/i), { target: { value: start } });
+  fireEvent.change(screen.getByLabelText(/fim do evento/i), { target: { value: end } });
+}
+
 function renderPage() {
   return render(
     <MemoryRouter>
@@ -66,6 +72,7 @@ describe('CreateEventPage (endereço → geocodificação)', () => {
 
     await user.type(screen.getByLabelText(/título/i), 'Festa de jazz');
     await user.type(screen.getByLabelText(/endereço/i), 'Lisboa');
+    fillWhen();
     await user.click(screen.getByRole('button', { name: /criar evento/i }));
 
     await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
@@ -101,6 +108,7 @@ describe('CreateEventPage (endereço → geocodificação)', () => {
 
     await user.type(screen.getByLabelText(/título/i), 'Evento sem lugar');
     await user.type(screen.getByLabelText(/endereço/i), 'endereço inexistente zzz');
+    fillWhen();
     await user.click(screen.getByRole('button', { name: /criar evento/i }));
 
     await waitFor(() => {
@@ -118,9 +126,7 @@ describe('CreateEventPage (endereço → geocodificação)', () => {
 
     await user.type(screen.getByLabelText(/título/i), 'Aula semanal');
     await user.type(screen.getByLabelText(/endereço/i), 'Lisboa');
-    fireEvent.change(screen.getByLabelText(/data do evento/i), {
-      target: { value: '2026-08-01T20:00' },
-    });
+    fillWhen('2026-08-01T20:00', '2026-08-01T22:00');
 
     await user.click(screen.getByLabelText(/repetir n vezes/i));
     fireEvent.change(screen.getByLabelText(/número de repetições/i), { target: { value: '3' } });
@@ -152,6 +158,7 @@ describe('CreateEventPage (endereço → geocodificação)', () => {
 
     await waitFor(() => expect(screen.getByText('Enviado')).toBeInTheDocument());
 
+    fillWhen();
     await user.click(screen.getByRole('button', { name: /criar evento/i }));
 
     await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
@@ -178,6 +185,7 @@ describe('CreateEventPage (lotação e lista de espera)', () => {
 
     await user.type(screen.getByLabelText(/título/i), 'Sarau aberto');
     await user.type(screen.getByLabelText(/endereço/i), 'Lisboa');
+    fillWhen();
     await user.click(screen.getByRole('button', { name: /criar evento/i }));
 
     await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
@@ -211,6 +219,7 @@ describe('CreateEventPage (lotação e lista de espera)', () => {
       target: { value: '15' },
     });
 
+    fillWhen();
     await user.click(screen.getByRole('button', { name: /criar evento/i }));
 
     await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
@@ -254,6 +263,7 @@ describe('CreateEventPage (categoria e lugar)', () => {
     await user.type(screen.getByLabelText(/título/i), 'Luau');
     await user.selectOptions(screen.getByLabelText(/categoria/i), 'Praia/Natureza');
     await user.type(screen.getByLabelText(/endereço/i), 'Lisboa');
+    fillWhen();
     await user.click(screen.getByRole('button', { name: /criar evento/i }));
 
     await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
@@ -269,6 +279,7 @@ describe('CreateEventPage (categoria e lugar)', () => {
     await user.type(screen.getByLabelText(/título/i), 'Noite de forró');
     await user.type(screen.getByLabelText(/lugar do flyer/i), 'parra');
     await user.click(await screen.findByRole('button', { name: /parraxaxá/i }));
+    fillWhen();
     await user.click(screen.getByRole('button', { name: /criar evento/i }));
 
     await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
@@ -291,6 +302,7 @@ describe('CreateEventPage (categoria e lugar)', () => {
 
     await user.type(screen.getByLabelText(/título/i), 'Festa');
     await user.type(screen.getByLabelText(/endereço/i), 'Lisboa');
+    fillWhen();
     await user.click(screen.getByRole('button', { name: /criar evento/i }));
 
     await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
@@ -330,6 +342,7 @@ describe('CreateEventPage (troféu do check-in)', () => {
     await user.type(screen.getByLabelText(/descrição do troféu/i), 'Dançaste frevo');
     await user.upload(screen.getByLabelText(/ícone do troféu/i), icon());
     await screen.findByRole('img', { name: /pré-visualização do ícone/i });
+    fillWhen();
     await user.click(screen.getByRole('button', { name: /criar evento/i }));
 
     await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
@@ -349,6 +362,7 @@ describe('CreateEventPage (troféu do check-in)', () => {
     await fillRequired(user);
     await user.upload(screen.getByLabelText(/ícone do troféu/i), icon());
     await screen.findByRole('img', { name: /pré-visualização do ícone/i });
+    fillWhen();
     await user.click(screen.getByRole('button', { name: /criar evento/i }));
 
     await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
@@ -364,6 +378,7 @@ describe('CreateEventPage (troféu do check-in)', () => {
 
     renderPage();
     await fillRequired(user);
+    fillWhen();
     await user.click(screen.getByRole('button', { name: /criar evento/i }));
 
     await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
@@ -386,6 +401,7 @@ describe('CreateEventPage (troféu do check-in)', () => {
 
     expect(await screen.findByText(/o ícone tem de ser uma imagem/i)).toBeInTheDocument();
     expect(screen.queryByRole('img', { name: /pré-visualização do ícone/i })).toBeNull();
+    fillWhen();
     await user.click(screen.getByRole('button', { name: /criar evento/i }));
     await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
     expect(createEvent.mock.calls[0][0].trophy ?? null).toBeNull();
@@ -415,6 +431,7 @@ describe('CreateEventPage (troféu do check-in)', () => {
 
     expect(screen.queryByRole('img', { name: /pré-visualização do ícone/i })).toBeNull();
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:preview-1');
+    fillWhen();
     await user.click(screen.getByRole('button', { name: /criar evento/i }));
     await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
     expect(createEvent.mock.calls[0][0].trophy ?? null).toBeNull();
@@ -427,5 +444,105 @@ describe('CreateEventPage (troféu do check-in)', () => {
       'accept',
       'image/png,image/jpeg,image/webp,image/gif',
     );
+  });
+});
+
+describe('CreateEventPage (início, fim e abertura do check-in)', () => {
+  beforeEach(() => {
+    createEvent.mockReset().mockResolvedValue({ id: 'e1' });
+    mockGeocodeHit();
+  });
+
+  async function fillRequired(user: ReturnType<typeof userEvent.setup>) {
+    await user.type(screen.getByLabelText(/^título/i), 'Aula de frevo');
+    await user.type(screen.getByLabelText(/endereço/i), 'Lisboa');
+  }
+
+  it('envia o início e o fim como hora de Recife, sem fuso', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+    await fillRequired(user);
+    fillWhen('2026-10-16T20:00', '2026-10-16T23:00');
+    await user.click(screen.getByRole('button', { name: /criar evento/i }));
+
+    await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
+    expect(createEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event_date: '2026-10-16T20:00',
+        ends_at: '2026-10-16T23:00',
+        checkin_opens_at: null,
+      }),
+    );
+  });
+
+  it('o início e o fim são obrigatórios', () => {
+    renderPage();
+
+    expect(screen.getByLabelText(/início do evento/i)).toBeRequired();
+    expect(screen.getByLabelText(/fim do evento/i)).toBeRequired();
+  });
+
+  it('não cria se o fim não for depois do início', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+    await fillRequired(user);
+    fillWhen('2026-10-16T20:00', '2026-10-16T19:00');
+    await user.click(screen.getByRole('button', { name: /criar evento/i }));
+
+    expect(await screen.findByText(/o fim tem de ser depois do início/i)).toBeInTheDocument();
+    expect(createEvent).not.toHaveBeenCalled();
+  });
+
+  it('a abertura do check-in pode ser programada', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+    await fillRequired(user);
+    fillWhen('2026-10-16T20:00', '2026-10-16T23:00');
+    fireEvent.change(screen.getByLabelText(/abrir check-in/i), { target: { value: '2026-10-16T19:30' } });
+    await user.click(screen.getByRole('button', { name: /criar evento/i }));
+
+    await waitFor(() => expect(createEvent).toHaveBeenCalledTimes(1));
+    expect(createEvent).toHaveBeenCalledWith(expect.objectContaining({ checkin_opens_at: '2026-10-16T19:30' }));
+  });
+
+  it('o check-in tem de abrir antes do fim', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+    await fillRequired(user);
+    fillWhen('2026-10-16T20:00', '2026-10-16T23:00');
+    fireEvent.change(screen.getByLabelText(/abrir check-in/i), { target: { value: '2026-10-16T23:30' } });
+    await user.click(screen.getByRole('button', { name: /criar evento/i }));
+
+    expect(await screen.findByText(/o check-in tem de abrir antes do fim/i)).toBeInTheDocument();
+    expect(createEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe('CreateEventPage (sair durante o envio do ícone)', () => {
+  it('não cria a pré-visualização depois de a página fechar', async () => {
+    const createObjectURL = vi.fn(() => 'blob:x');
+    Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() });
+    let finish: (path: string) => void = () => {};
+    uploadTrophyIcon.mockReset().mockReturnValue(
+      new Promise<string>((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const user = userEvent.setup();
+
+    const { unmount } = renderPage();
+    await user.upload(
+      screen.getByLabelText(/ícone do troféu/i),
+      new File([new Uint8Array([1])], 'trofeu.png', { type: 'image/png' }),
+    );
+    unmount();
+    finish('user-1/trofeu.png');
+    await Promise.resolve();
+
+    expect(createObjectURL).not.toHaveBeenCalled();
   });
 });

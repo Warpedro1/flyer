@@ -28,6 +28,21 @@ function extensionFor(file: File): string {
 }
 
 /**
+ * Envia um ficheiro já validado para `{userId}/<uuid>.<extensão>` no bucket PRIVADO
+ * e devolve o caminho. O backend assina a URL na leitura. Único sítio que escreve no
+ * bucket: o esquema do caminho e as opções do upload ficam iguais para todos.
+ */
+async function uploadToEventMedia(userId: string, file: File, extension: string): Promise<string> {
+  const path = `${userId}/${crypto.randomUUID()}.${extension}`;
+  const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
+    contentType: file.type || undefined,
+    upsert: false,
+  });
+  if (error) throw error;
+  return path;
+}
+
+/**
  * Faz upload de uma mídia de evento para o bucket PRIVADO, na pasta do usuário,
  * e retorna o caminho (path) + tipo. O backend assina a URL na leitura.
  */
@@ -42,14 +57,7 @@ export async function uploadEventMedia(userId: string, file: File): Promise<Uplo
     throw new Error(`Arquivo muito grande. Limite de ${String(mb)} MB para ${type === 'image' ? 'imagens' : 'vídeos'}.`);
   }
 
-  const path = `${userId}/${crypto.randomUUID()}.${extensionFor(file)}`;
-  const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
-    contentType: file.type || undefined,
-    upsert: false,
-  });
-  if (error) throw error;
-
-  return { path, type };
+  return { path: await uploadToEventMedia(userId, file, extensionFor(file)), type };
 }
 
 /** O ícone do troféu: só os formatos que o backend aceita (sem SVG, que pode levar scripts). */
@@ -77,12 +85,5 @@ export async function uploadTrophyIcon(userId: string, file: File): Promise<stri
     throw new Error(`Imagem muito grande. Limite de ${String(mb)} MB.`);
   }
 
-  const path = `${userId}/${crypto.randomUUID()}.${extension}`;
-  const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
-    contentType: file.type,
-    upsert: false,
-  });
-  if (error) throw error;
-
-  return path;
+  return uploadToEventMedia(userId, file, extension);
 }

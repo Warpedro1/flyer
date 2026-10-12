@@ -65,6 +65,9 @@ export interface OpeningHours {
   hours: string;
 }
 
+/** Se o check-in é possível agora (backend: services/checkin_window.py). */
+export type CheckinStatus = 'open' | 'not_yet' | 'closed' | 'no_schedule';
+
 export interface EventRead {
   id: string;
   kind: EventKind;
@@ -79,6 +82,12 @@ export interface EventRead {
   lat: number;
   long: number;
   event_date: string | null;
+  /** Fim do evento: o check-in fecha a esta hora. */
+  ends_at: string | null;
+  /** Janela de check-in (eventos) ou turno de funcionamento atual (lugares). */
+  checkin_opens_at: string | null;
+  checkin_closes_at: string | null;
+  checkin_status: CheckinStatus | null;
   /** Pydantic `Decimal` serializes as string in JSON. */
   price: string | null;
   /** Pydantic `Decimal` serializes as string in JSON. */
@@ -261,7 +270,8 @@ export interface TrophyCustomization {
   icon_url?: string | null;
 }
 
-export interface EventCreate {
+/** Campos que o criador define, ao criar e ao editar (espelha `_EventFields`). */
+export interface EventFields {
   title: string;
   description?: string | null;
   category?: EventCategory | null;
@@ -270,11 +280,14 @@ export interface EventCreate {
   location_name?: string | null;
   lat: number;
   long: number;
-  event_date?: string | null;
+  /** Início e fim, obrigatórios. Sem fuso = hora de Recife ("2026-10-16T20:00"). */
+  event_date: string;
+  ends_at: string;
+  /** Quando o check-in abre; null = no início. */
+  checkin_opens_at?: string | null;
   /** Decimal sent as string. */
   price?: string | null;
   media?: EventMediaCreate[];
-  recurrence?: EventRecurrence | null;
   /** null = sem limite de pessoas (predefinição). */
   capacity?: number | null;
   waitlist_enabled?: boolean;
@@ -282,6 +295,50 @@ export interface EventCreate {
   auto_call_next?: boolean;
   /** Troféu do check-in; sem ele o backend dá o troféu padrão. */
   trophy?: TrophyCustomization | null;
+}
+
+export interface EventCreate extends EventFields {
+  recurrence?: EventRecurrence | null;
+}
+
+/** Editar uma data do evento: tudo menos a recorrência. */
+export type EventUpdate = EventFields;
+
+export interface EventMediaEdit {
+  /** Caminho no bucket (o que se volta a enviar ao gravar). */
+  media_url: string;
+  type: MediaType;
+  order_index: number;
+  preview_url: string | null;
+}
+
+export interface TrophyEditRead {
+  name: string;
+  description: string | null;
+  icon_url: string | null;
+  icon_preview_url: string | null;
+}
+
+/** GET /events/:id/edit (só o criador). Datas em UTC. */
+export interface EventEditRead {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  place_id: string | null;
+  location_name: string | null;
+  lat: number;
+  long: number;
+  event_date: string | null;
+  ends_at: string | null;
+  checkin_opens_at: string | null;
+  price: string | null;
+  capacity: number | null;
+  waitlist_enabled: boolean;
+  call_ttl_minutes: number;
+  auto_call_next: boolean;
+  media: EventMediaEdit[];
+  trophy: TrophyEditRead | null;
 }
 
 /** Espelha o enum Postgres `rsvp_status`. */

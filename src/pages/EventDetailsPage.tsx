@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { BellRing, Clock, ExternalLink, Heart, MapPin, QrCode, Share2, Users } from 'lucide-react';
+import { BellRing, Clock, ExternalLink, Heart, MapPin, Pencil, QrCode, Share2, Users } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
@@ -7,10 +7,20 @@ import { BackButton } from '../components/navigation/BackButton.tsx';
 import { TrophyIcon } from '../components/ui/TrophyIcon.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
 import { useEffectiveGeo } from '../hooks/useEffectiveGeo.ts';
-import { checkIn, getEventById, getPlaceEvents, joinEvent, leaveEvent } from '../services/flyerApi.ts';
+import {
+  checkIn,
+  closeCheckin,
+  getEventById,
+  getPlaceEvents,
+  joinEvent,
+  leaveEvent,
+  openCheckin,
+} from '../services/flyerApi.ts';
 import type { EventRead, TrophyRead } from '../types/index.ts';
 import { formatApiError } from '../utils/apiError.ts';
 import { categoryLabel } from '../utils/categories.ts';
+import { checkinAllowed, checkinStatusText } from '../utils/checkinLabel.ts';
+import { formatRecifeTime } from '../utils/recifeTime.ts';
 import {
   eventPriceText,
   formatEventDate,
@@ -42,6 +52,7 @@ export default function EventDetailsPage() {
   const [checkError, setCheckError] = useState<string | null>(null);
   const [trophy, setTrophy] = useState<TrophyRead | null>(null);
   const [rsvpBusy, setRsvpBusy] = useState(false);
+  const [windowBusy, setWindowBusy] = useState(false);
   const [rsvpError, setRsvpError] = useState<string | null>(null);
   const [placeEvents, setPlaceEvents] = useState<EventRead[]>([]);
   const { user } = useAuth();
@@ -164,6 +175,21 @@ export default function EventDetailsPage() {
     }
   };
 
+  // O dono abre o check-in antes da hora programada, ou fecha-o antes do fim.
+  const handleCheckinWindow = async (action: 'open' | 'close') => {
+    if (!id) return;
+    setWindowBusy(true);
+    setCheckError(null);
+    try {
+      await (action === 'open' ? openCheckin(id) : closeCheckin(id));
+      await reload();
+    } catch (err) {
+      setCheckError(formatApiError(err));
+    } finally {
+      setWindowBusy(false);
+    }
+  };
+
   const handleShare = async () => {
     const url = window.location.href;
     try {
@@ -193,6 +219,8 @@ export default function EventDetailsPage() {
       </div>
     );
   }
+
+  const statusText = checkinStatusText(event);
 
   // `block`: o bilhete é um <Link> (um <a>, inline), e sem isto o w-full e o py-4
   // não ocupam espaço.
@@ -304,7 +332,12 @@ export default function EventDetailsPage() {
             <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
               <p className="text-xs text-gray-500">Data</p>
               <p className="font-semibold text-gray-900">{dateStr}</p>
-              {timeStr && <p className="text-xs text-gray-500">{timeStr}</p>}
+              {timeStr && (
+                <p className="text-xs text-gray-500">
+                  {timeStr}
+                  {event.ends_at && ` – ${formatRecifeTime(event.ends_at)}`}
+                </p>
+              )}
             </div>
           )}
           <div className="col-span-2 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:col-span-1">
@@ -435,6 +468,43 @@ export default function EventDetailsPage() {
           </div>
         )}
 
+        {isCreator && id && !isPlace && (
+          <div className="space-y-2 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Organização</p>
+            {/* Importados vêm de uma fonte: uma nova importação desfazia a edição. */}
+            {!event.source_url && (
+              <Link
+                to={`/events/${id}/edit`}
+                className="flex items-center justify-between rounded-xl px-1 py-2 font-medium text-gray-900 transition hover:text-red-600"
+              >
+                Editar evento
+                <Pencil className="h-5 w-5 text-red-600" />
+              </Link>
+            )}
+            {event.checkin_status === 'open' ? (
+              <button
+                type="button"
+                onClick={() => void handleCheckinWindow('close')}
+                disabled={windowBusy}
+                className="w-full rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-700 transition hover:border-red-300 hover:text-red-600 disabled:opacity-60"
+              >
+                Fechar check-in
+              </button>
+            ) : (
+              event.checkin_status !== 'no_schedule' && (
+                <button
+                  type="button"
+                  onClick={() => void handleCheckinWindow('open')}
+                  disabled={windowBusy}
+                  className="w-full rounded-xl border border-red-200 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
+                >
+                  Abrir check-in agora
+                </button>
+              )
+            )}
+          </div>
+        )}
+
         {isCreator && id && (
           <Link
             to={`/events/${id}/attendees`}
@@ -476,10 +546,15 @@ export default function EventDetailsPage() {
         <div className="mx-auto max-w-3xl space-y-2 md:px-4">
           {/* Lugares não têm inscrição nem bilhete; o check-in mantém-se. */}
           {!isPlace && rsvpAction}
+          {statusText && (
+            <p className="text-center text-sm text-gray-600" data-testid="checkin-status">
+              {statusText}
+            </p>
+          )}
           <button
             type="button"
             onClick={() => void handleCheckIn()}
-            disabled={checking}
+            disabled={checking || !checkinAllowed(event)}
             title={!canCheckInPhysically ? 'Ativa o GPS para fazer check-in' : undefined}
             className="w-full rounded-2xl bg-red-600 py-4 font-semibold text-white shadow-lg shadow-red-200 transition hover:bg-red-700 disabled:opacity-60"
           >

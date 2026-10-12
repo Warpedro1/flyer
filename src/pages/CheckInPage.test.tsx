@@ -58,3 +58,29 @@ describe('CheckInPage', () => {
     expect(screen.getByText('Dançaste frevo')).toBeInTheDocument();
   });
 });
+
+describe('CheckInPage — janela de check-in', () => {
+  beforeEach(() => {
+    checkIn.mockReset();
+  });
+
+  it('um evento que ainda não abriu não deixa fazer check-in e diz quando abre', async () => {
+    discoverEvents.mockReset().mockResolvedValue([
+      makeEvent({
+        id: 'evt-2',
+        title: 'Frevo amanhã',
+        checkin_status: 'not_yet',
+        checkin_opens_at: '2026-10-16T23:00:00+00:00',
+      }),
+    ]);
+
+    render(
+      <MemoryRouter>
+        <CheckInPage />
+      </MemoryRouter>,
+    );
+
+    const button = await screen.findByRole('button', { name: /abre às 20:00 de 16\/10/i });
+    expect(button).toBeDisabled();
+  });
+});

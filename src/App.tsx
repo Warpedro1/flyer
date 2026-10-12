@@ -4,6 +4,7 @@ import AppLayout from './components/layout/AppLayout.tsx';
 import ChatPage from './pages/ChatPage.tsx';
 import CheckInPage from './pages/CheckInPage.tsx';
 import CreateEventPage from './pages/CreateEventPage.tsx';
+import EditEventPage from './pages/EditEventPage.tsx';
 import DiscoverPage from './pages/DiscoverPage.tsx';
 import EventAttendeesPage from './pages/EventAttendeesPage.tsx';
 import EventDetailsPage from './pages/EventDetailsPage.tsx';
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="/events" element={<MyEventsPage />} />
         <Route path="/events/new" element={<CreateEventPage />} />
         <Route path="/events/:id" element={<EventDetailsPage />} />
+        <Route path="/events/:id/edit" element={<EditEventPage />} />
         <Route path="/events/:id/ticket" element={<MyTicketPage />} />
         <Route path="/events/:id/attendees" element={<EventAttendeesPage />} />
         <Route path="/events/:id/scan" element={<ScanTicketPage />} />
