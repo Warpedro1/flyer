@@ -51,3 +51,38 @@ export async function uploadEventMedia(userId: string, file: File): Promise<Uplo
 
   return { path, type };
 }
+
+/** O ícone do troféu: só os formatos que o backend aceita (sem SVG, que pode levar scripts). */
+const TROPHY_ICON_EXTENSIONS: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+};
+export const TROPHY_ICON_ACCEPT = Object.keys(TROPHY_ICON_EXTENSIONS).join(',');
+export const MAX_TROPHY_ICON_BYTES = MAX_IMAGE_BYTES;
+
+/**
+ * Faz upload do ícone de um troféu personalizado para a pasta do utilizador no
+ * bucket privado e devolve o caminho. A extensão vem do tipo da imagem, não do
+ * nome do ficheiro: o backend valida-a.
+ */
+export async function uploadTrophyIcon(userId: string, file: File): Promise<string> {
+  const extension = TROPHY_ICON_EXTENSIONS[file.type];
+  if (!extension) {
+    throw new Error('O ícone tem de ser uma imagem PNG, JPG, WebP ou GIF.');
+  }
+  if (file.size > MAX_TROPHY_ICON_BYTES) {
+    const mb = Math.round(MAX_TROPHY_ICON_BYTES / (1024 * 1024));
+    throw new Error(`Imagem muito grande. Limite de ${String(mb)} MB.`);
+  }
+
+  const path = `${userId}/${crypto.randomUUID()}.${extension}`;
+  const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
+    contentType: file.type,
+    upsert: false,
+  });
+  if (error) throw error;
+
+  return path;
+}

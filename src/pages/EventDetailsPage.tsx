@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { BackButton } from '../components/navigation/BackButton.tsx';
+import { TrophyIcon } from '../components/ui/TrophyIcon.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
 import { useEffectiveGeo } from '../hooks/useEffectiveGeo.ts';
 import { checkIn, getEventById, getPlaceEvents, joinEvent, leaveEvent } from '../services/flyerApi.ts';
@@ -240,7 +241,7 @@ export default function EventDetailsPage() {
   }
 
   return (
-    <div className="pb-28 md:pb-6">
+    <div className="flex min-h-full flex-col md:block md:pb-6">
       {/* Barra fixa no topo: o Voltar não desaparece com o scroll (estas páginas não têm
           a barra de navegação de baixo). Fica por cima da capa, com altura zero. */}
       <div
@@ -293,7 +294,7 @@ export default function EventDetailsPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-3xl space-y-4 px-4 py-6">
+      <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
             <p className="text-xs text-gray-500">Preço</p>
@@ -457,14 +458,21 @@ export default function EventDetailsPage() {
         )}
 
         {trophy && (
-          <div className="rounded-2xl border border-green-200 bg-green-50 p-4 text-green-900">
-            <strong>Troféu:</strong> {trophy.name}
-            {trophy.description && <p className="mt-1 text-sm">{trophy.description}</p>}
+          <div className="flex items-center gap-4 rounded-2xl border border-green-200 bg-green-50 p-4 text-green-900">
+            <TrophyIcon iconUrl={trophy.icon_url} name={trophy.name} className="h-14 w-14 shrink-0" />
+            <div className="min-w-0">
+              <strong>Troféu:</strong> {trophy.name}
+              {trophy.description && <p className="mt-1 text-sm">{trophy.description}</p>}
+            </div>
           </div>
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-[100] border-t border-gray-200 bg-white/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur md:static md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
+      {/* Sticky e não fixed: no fim do scroll a barra ocupa o seu espaço e não tapa o conteúdo. */}
+      <div
+        data-testid="event-actions"
+        className="sticky bottom-0 z-[100] mt-auto border-t border-gray-200 bg-white/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur md:static md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none"
+      >
         <div className="mx-auto max-w-3xl space-y-2 md:px-4">
           {/* Lugares não têm inscrição nem bilhete; o check-in mantém-se. */}
           {!isPlace && rsvpAction}

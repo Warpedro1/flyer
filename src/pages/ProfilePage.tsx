@@ -2,7 +2,7 @@ import { CreditCard, LogOut, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { WingHeartLogo } from '../components/layout/WingHeartLogo.tsx';
+import { TrophyIcon } from '../components/ui/TrophyIcon.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
 import { getUserTrophies } from '../services/flyerApi.ts';
 import type { TrophyRead } from '../types/index.ts';
@@ -112,11 +112,7 @@ export default function ProfilePage() {
               className="flex flex-col items-center rounded-2xl border border-gray-100 bg-white p-4 text-center shadow-sm"
             >
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-red-50 to-white">
-                {t.icon_url ? (
-                  <img src={t.icon_url} alt="" className="h-12 w-12 object-contain" />
-                ) : (
-                  <WingHeartLogo className="h-10 w-10 text-red-600" />
-                )}
+                <TrophyIcon iconUrl={t.icon_url} name={t.name} />
               </div>
               <p className="mt-2 text-sm font-semibold text-gray-900">{t.name}</p>
               {t.acquired_at && (

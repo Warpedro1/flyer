@@ -1,18 +1,20 @@
 import { Plus, Trash2, UploadCloud } from 'lucide-react';
-import { type DragEvent, type FormEvent, useCallback, useState } from 'react';
+import { type DragEvent, type FormEvent, useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { PlacePicker } from '../components/events/PlacePicker.tsx';
+import { WingHeartLogo } from '../components/layout/WingHeartLogo.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
 import { useEffectiveGeo } from '../hooks/useEffectiveGeo.ts';
 import { createEvent } from '../services/flyerApi.ts';
-import { uploadEventMedia } from '../services/storage.ts';
+import { TROPHY_ICON_ACCEPT, uploadEventMedia, uploadTrophyIcon } from '../services/storage.ts';
 import type {
   EventCategory,
   EventMediaCreate,
   EventRead,
   EventRecurrence,
   MediaType,
+  TrophyCustomization,
 } from '../types/index.ts';
 import { formatApiError } from '../utils/apiError.ts';
 import { EVENT_CATEGORIES } from '../utils/categories.ts';
@@ -29,6 +31,13 @@ interface MediaEntry {
   path?: string;
   error?: string;
 }
+
+/** Ícone do troféu: caminho no bucket depois do upload + pré-visualização local. */
+type TrophyIconState =
+  | { status: 'none' }
+  | { status: 'uploading' }
+  | { status: 'done'; path: string; previewUrl: string }
+  | { status: 'error'; error: string };
 
 type RecurrenceUiMode = 'none' | 'count' | 'weekly' | 'range';
 
@@ -55,6 +64,18 @@ export default function CreateEventPage() {
   const [autoCallNext, setAutoCallNext] = useState(true);
   const [mediaEntries, setMediaEntries] = useState<MediaEntry[]>([]);
   const [dragOver, setDragOver] = useState(false);
+
+  // Troféu do check-in (opcional): sem nada, o backend dá "Presença: <título>".
+  const [trophyName, setTrophyName] = useState('');
+  const [trophyDescription, setTrophyDescription] = useState('');
+  const [trophyIcon, setTrophyIcon] = useState<TrophyIconState>({ status: 'none' });
+  const trophyPreviewUrl = trophyIcon.status === 'done' ? trophyIcon.previewUrl : null;
+
+  // Liberta a pré-visualização quando o ícone muda ou a página fecha.
+  useEffect(() => {
+    if (!trophyPreviewUrl) return;
+    return () => URL.revokeObjectURL(trophyPreviewUrl);
+  }, [trophyPreviewUrl]);
 
   // Recorrência (expandida em várias linhas de evento pelo backend).
   const [recurrenceMode, setRecurrenceMode] = useState<RecurrenceUiMode>('none');
@@ -201,6 +222,32 @@ export default function CreateEventPage() {
     [user?.id],
   );
 
+  const handleTrophyIcon = async (file: File) => {
+    const userId = user?.id;
+    if (!userId) {
+      setTrophyIcon({ status: 'error', error: 'Faça login novamente para enviar o ícone.' });
+      return;
+    }
+    setTrophyIcon({ status: 'uploading' });
+    try {
+      const path = await uploadTrophyIcon(userId, file);
+      setTrophyIcon({ status: 'done', path, previewUrl: URL.createObjectURL(file) });
+    } catch (err) {
+      setTrophyIcon({
+        status: 'error',
+        error: err instanceof Error ? err.message : 'Falha no envio do ícone.',
+      });
+    }
+  };
+
+  const buildTrophy = (): TrophyCustomization | null => {
+    const name = trophyName.trim() || null;
+    const trophyText = trophyDescription.trim() || null;
+    const iconPath = trophyIcon.status === 'done' ? trophyIcon.path : null;
+    if (!name && !trophyText && !iconPath) return null;
+    return { name, description: trophyText, icon_url: iconPath };
+  };
+
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
     setDragOver(false);
@@ -271,6 +318,7 @@ export default function CreateEventPage() {
         waitlist_enabled: limitPeople ? waitlistEnabled : true,
         call_ttl_minutes: Number(callTtl) > 0 ? Number(callTtl) : 10,
         auto_call_next: autoCallNext,
+        trophy: buildTrophy(),
       });
       setSuccess(true);
       setTimeout(() => void navigate('/events'), 1200);
@@ -281,7 +329,8 @@ export default function CreateEventPage() {
     }
   };
 
-  const uploadingMedia = mediaEntries.some((m) => m.status === 'uploading');
+  const uploadingMedia =
+    mediaEntries.some((m) => m.status === 'uploading') || trophyIcon.status === 'uploading';
   const showConfirmation = resolvedLabel !== null && geocodedFor === address.trim();
 
   return (
@@ -579,6 +628,93 @@ export default function CreateEventPage() {
             ))}
           </div>
         </div>
+
+        <fieldset className="rounded-2xl border border-gray-200 p-4">
+          <legend className="px-1 text-sm font-medium text-gray-700">
+            Troféu do check-in (opcional)
+          </legend>
+          <p className="text-xs text-gray-500">
+            {'Quem fizer check-in ganha este troféu. Sem personalização é "Presença: <título do evento>" com o ícone do Flyer.'}
+          </p>
+
+          <div className="mt-4 flex items-start gap-4">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-red-50 to-white">
+              {trophyIcon.status === 'done' ? (
+                <img
+                  src={trophyIcon.previewUrl}
+                  alt="Pré-visualização do ícone"
+                  className="h-16 w-16 rounded-2xl object-contain"
+                />
+              ) : (
+                <WingHeartLogo className="h-12 w-12 text-red-600" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <label htmlFor="trophy-icon" className="block text-sm font-medium text-gray-700">
+                Ícone do troféu
+              </label>
+              <input
+                id="trophy-icon"
+                type="file"
+                accept={TROPHY_ICON_ACCEPT}
+                disabled={trophyIcon.status === 'uploading'}
+                className="mt-1 block w-full text-sm text-gray-600 file:mr-3 file:rounded-xl file:border-0 file:bg-red-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-red-700 hover:file:bg-red-100 disabled:opacity-60"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void handleTrophyIcon(file);
+                  e.target.value = '';
+                }}
+              />
+              <p className="mt-1 text-xs text-gray-500">PNG, JPG, WebP ou GIF, de preferência quadrada.</p>
+              {trophyIcon.status === 'uploading' && (
+                <p className="mt-1 text-sm text-gray-400">A enviar o ícone…</p>
+              )}
+              {trophyIcon.status === 'error' && (
+                <p className="mt-1 text-sm text-red-600">{trophyIcon.error}</p>
+              )}
+              {trophyIcon.status === 'done' && (
+                <button
+                  type="button"
+                  onClick={() => setTrophyIcon({ status: 'none' })}
+                  className="mt-2 inline-flex items-center gap-1 rounded-xl border border-red-200 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+                  aria-label="Remover ícone"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Remover
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <label htmlFor="trophy-name" className="block text-sm font-medium text-gray-700">
+              Nome do troféu
+            </label>
+            <input
+              id="trophy-name"
+              type="text"
+              maxLength={80}
+              placeholder={`Presença: ${title.trim() || 'título do evento'}`}
+              className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
+              value={trophyName}
+              onChange={(e) => setTrophyName(e.target.value)}
+            />
+          </div>
+
+          <div className="mt-4">
+            <label htmlFor="trophy-description" className="block text-sm font-medium text-gray-700">
+              Descrição do troféu
+            </label>
+            <textarea
+              id="trophy-description"
+              rows={2}
+              maxLength={300}
+              className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
+              value={trophyDescription}
+              onChange={(e) => setTrophyDescription(e.target.value)}
+            />
+          </div>
+        </fieldset>
 
         <div>
           <p className="text-sm font-medium text-gray-700">Recorrência</p>

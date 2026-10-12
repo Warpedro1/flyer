@@ -252,6 +252,15 @@ export interface EventRecurrence {
   end?: string | null;
 }
 
+/** Troféu personalizado do evento. Campos vazios ficam com o padrão do backend. */
+export interface TrophyCustomization {
+  /** Por omissão: "Presença: <título>". */
+  name?: string | null;
+  description?: string | null;
+  /** Caminho de uma imagem no bucket event-media ({user_id}/…). Null = ícone do Flyer. */
+  icon_url?: string | null;
+}
+
 export interface EventCreate {
   title: string;
   description?: string | null;
@@ -271,6 +280,8 @@ export interface EventCreate {
   waitlist_enabled?: boolean;
   call_ttl_minutes?: number;
   auto_call_next?: boolean;
+  /** Troféu do check-in; sem ele o backend dá o troféu padrão. */
+  trophy?: TrophyCustomization | null;
 }
 
 /** Espelha o enum Postgres `rsvp_status`. */
