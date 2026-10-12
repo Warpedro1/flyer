@@ -1,5 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
+import { redirectIfEmailCodeRequired } from './emailCodeRedirect.ts';
 import { supabase } from './supabase.ts';
 
 const baseURL = import.meta.env.VITE_API_BASE_URL;
@@ -33,6 +34,8 @@ apiClient.interceptors.response.use(
     // Do not call signOut() on 401: the FastAPI JWT check can fail (wrong secret, etc.)
     // while the Supabase session is still valid — that would kick the user back to /login
     // after the first API call. Let the UI show the error from the response instead.
+    // A password session without the e-mail code goes to the code screen (sessão mantida).
+    redirectIfEmailCodeRequired(error, window.location.pathname, (path) => window.location.assign(path));
     return Promise.reject(error);
   },
 );

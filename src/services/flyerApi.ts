@@ -229,3 +229,23 @@ export async function scanTicket(eventId: string, token: string): Promise<ScanRe
   );
   return data;
 }
+
+/** Segundo fator do login com senha (backend: /auth/email-code). */
+export interface EmailCodeStatus {
+  required: boolean;
+  verified: boolean;
+}
+
+export async function getEmailCodeStatus(): Promise<EmailCodeStatus> {
+  const { data } = await apiClient.get<EmailCodeStatus>('/auth/email-code/status');
+  return data;
+}
+
+/** O backend pede ao Supabase que envie o código para o e-mail da conta. */
+export async function sendEmailCode(): Promise<void> {
+  await apiClient.post('/auth/email-code/send');
+}
+
+export async function verifyEmailCode(code: string): Promise<void> {
+  await apiClient.post('/auth/email-code/verify', { code });
+}

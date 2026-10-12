@@ -8,7 +8,11 @@ import EditEventPage from './pages/EditEventPage.tsx';
 import DiscoverPage from './pages/DiscoverPage.tsx';
 import EventAttendeesPage from './pages/EventAttendeesPage.tsx';
 import EventDetailsPage from './pages/EventDetailsPage.tsx';
+import EmailCodePage from './pages/EmailCodePage.tsx';
+import ForgotPasswordPage from './pages/ForgotPasswordPage.tsx';
 import LoginPage from './pages/LoginPage.tsx';
+import ResetPasswordPage from './pages/ResetPasswordPage.tsx';
+import SignupPage from './pages/SignupPage.tsx';
 import MapPage from './pages/MapPage.tsx';
 import MyEventsPage from './pages/MyEventsPage.tsx';
 import MyTicketPage from './pages/MyTicketPage.tsx';
@@ -21,6 +25,10 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/login/code" element={<EmailCodePage />} />
+      <Route path="/signup" element={<SignupPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route element={<AppLayout />}>
         <Route path="/" element={<DiscoverPage />} />
         <Route path="/map" element={<MapPage />} />

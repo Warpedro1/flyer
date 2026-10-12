@@ -3,6 +3,8 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { User } from '@supabase/supabase-js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { fakeAccessToken } from '../../test/tokens.ts';
+
 import AppLayout from './AppLayout';
 
 const testUser = {
@@ -28,6 +30,9 @@ const mockUseAuth = vi.hoisted(() =>
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => mockUseAuth(),
 }));
+
+const getEmailCodeStatus = vi.hoisted(() => vi.fn());
+vi.mock('../../services/flyerApi.ts', () => ({ getEmailCodeStatus }));
 
 function renderAppWithChild(childText: string) {
   return render(
@@ -75,3 +80,59 @@ describe('AppLayout', () => {
   });
 });
 
+
+describe('AppLayout — código do login por e-mail', () => {
+  function withSession(methods: string[]) {
+    mockUseAuth.mockReturnValue({
+      user: testUser,
+      session: { access_token: fakeAccessToken(methods) } as never,
+      loading: false,
+      signInWithGoogle: vi.fn(),
+      signOut: vi.fn().mockResolvedValue(undefined),
+    });
+  }
+
+  function renderWithCodeRoute() {
+    return render(
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<p>Início</p>} />
+          </Route>
+          <Route path="/login/code" element={<p>Ecrã do código</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+  }
+
+  beforeEach(() => {
+    getEmailCodeStatus.mockReset();
+  });
+
+  it('quem entrou com a senha e não pôs o código vai para o código', async () => {
+    withSession(['password']);
+    getEmailCodeStatus.mockResolvedValue({ required: true, verified: false });
+
+    renderWithCodeRoute();
+
+    expect(await screen.findByText('Ecrã do código')).toBeInTheDocument();
+  });
+
+  it('com o código já posto, entra', async () => {
+    withSession(['password']);
+    getEmailCodeStatus.mockResolvedValue({ required: true, verified: true });
+
+    renderWithCodeRoute();
+
+    expect(await screen.findByText('Início')).toBeInTheDocument();
+  });
+
+  it('quem entrou com o Google nem pergunta', () => {
+    withSession(['oauth']);
+
+    renderWithCodeRoute();
+
+    expect(screen.getByText('Início')).toBeInTheDocument();
+    expect(getEmailCodeStatus).not.toHaveBeenCalled();
+  });
+});
