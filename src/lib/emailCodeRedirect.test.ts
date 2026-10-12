@@ -31,3 +31,20 @@ describe('redirectIfEmailCodeRequired', () => {
     expect(go).not.toHaveBeenCalled();
   });
 });
+
+describe('profile_incomplete', () => {
+  it('um 403 profile_incomplete leva a completar o cadastro', () => {
+    const go = vi.fn();
+
+    expect(redirectIfEmailCodeRequired(error(403, 'profile_incomplete'), '/events', go)).toBe(true);
+    expect(go).toHaveBeenCalledWith('/complete-profile');
+  });
+
+  it('não sai do próprio ecrã de completar', () => {
+    const go = vi.fn();
+
+    redirectIfEmailCodeRequired(error(403, 'profile_incomplete'), '/complete-profile', go);
+
+    expect(go).not.toHaveBeenCalled();
+  });
+});

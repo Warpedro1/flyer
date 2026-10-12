@@ -32,7 +32,10 @@ vi.mock('../../hooks/useAuth', () => ({
 }));
 
 const getEmailCodeStatus = vi.hoisted(() => vi.fn());
-vi.mock('../../services/flyerApi.ts', () => ({ getEmailCodeStatus }));
+const getProfileStatus = vi.hoisted(() =>
+  vi.fn().mockResolvedValue({ complete: true, cpf_masked: null, phone_masked: null }),
+);
+vi.mock('../../services/flyerApi.ts', () => ({ getEmailCodeStatus, getProfileStatus }));
 
 function renderAppWithChild(childText: string) {
   return render(
@@ -51,8 +54,10 @@ describe('AppLayout', () => {
     mockUseAuth.mockClear();
   });
 
-  it('apresenta os links de navegação principais Descobrir, Chat IA e Perfil', () => {
+  it('apresenta os links de navegação principais Descobrir, Chat IA e Perfil', async () => {
     renderAppWithChild('outlet-stub');
+    // Primeiro confirma-se a conta (código do e-mail, CPF e celular) no backend.
+    await screen.findByRole('main');
 
     for (const name of ['Descobrir', 'Chat IA', 'Perfil'] as const) {
       const links = screen.getAllByRole('link', { name });
@@ -60,18 +65,18 @@ describe('AppLayout', () => {
     }
   });
 
-  it('renderiza o conteúdo da rota filha (Outlet) na área principal', () => {
+  it('renderiza o conteúdo da rota filha (Outlet) na área principal', async () => {
     const childMarker = 'conteúdo-aninhado-único-para-outlet';
     renderAppWithChild(childMarker);
-    expect(screen.getByText(childMarker)).toBeInTheDocument();
+    expect(await screen.findByText(childMarker)).toBeInTheDocument();
   });
 
-  it('a barra de navegação do telemóvel fica fora da área com scroll, logo abaixo dela', () => {
+  it('a barra de navegação do telemóvel fica fora da área com scroll, logo abaixo dela', async () => {
     // Se a barra estivesse dentro do <main>, ou posicionada por cima dele, mexia-se
     // com o scroll. Como irmã do <main> na mesma coluna, fica sempre no fundo.
     renderAppWithChild('outlet-stub');
 
-    const main = screen.getByRole('main');
+    const main = await screen.findByRole('main');
     const nav = screen.getByRole('navigation', { name: /navegação principal/i });
 
     expect(main.contains(nav)).toBe(false);
@@ -100,6 +105,7 @@ describe('AppLayout — código do login por e-mail', () => {
             <Route path="/" element={<p>Início</p>} />
           </Route>
           <Route path="/login/code" element={<p>Ecrã do código</p>} />
+          <Route path="/complete-profile" element={<p>Completar cadastro</p>} />
         </Routes>
       </MemoryRouter>,
     );
@@ -127,12 +133,31 @@ describe('AppLayout — código do login por e-mail', () => {
     expect(await screen.findByText('Início')).toBeInTheDocument();
   });
 
-  it('quem entrou com o Google nem pergunta', () => {
+  it('quem entrou com o Google não precisa do código', async () => {
     withSession(['oauth']);
 
     renderWithCodeRoute();
 
-    expect(screen.getByText('Início')).toBeInTheDocument();
+    expect(await screen.findByText('Início')).toBeInTheDocument();
     expect(getEmailCodeStatus).not.toHaveBeenCalled();
+  });
+
+  it('sem CPF e celular vai completar o cadastro', async () => {
+    withSession(['oauth']);
+    getProfileStatus.mockResolvedValueOnce({ complete: false, cpf_masked: null, phone_masked: null });
+
+    renderWithCodeRoute();
+
+    expect(await screen.findByText('Completar cadastro')).toBeInTheDocument();
+  });
+
+  it('o código vem antes do cadastro', async () => {
+    withSession(['password']);
+    getEmailCodeStatus.mockResolvedValue({ required: true, verified: false });
+    getProfileStatus.mockResolvedValueOnce({ complete: false, cpf_masked: null, phone_masked: null });
+
+    renderWithCodeRoute();
+
+    expect(await screen.findByText('Ecrã do código')).toBeInTheDocument();
   });
 });

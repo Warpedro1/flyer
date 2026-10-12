@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { TrophyIcon } from '../components/ui/TrophyIcon.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
-import { getUserTrophies } from '../services/flyerApi.ts';
+import { type ProfileStatus, getProfileStatus, getUserTrophies } from '../services/flyerApi.ts';
 import type { TrophyRead } from '../types/index.ts';
 import { formatApiError } from '../utils/apiError.ts';
 
@@ -17,6 +17,22 @@ export default function ProfilePage() {
   const [trophies, setTrophies] = useState<TrophyRead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [identity, setIdentity] = useState<ProfileStatus | null>(null);
+
+  // CPF e celular da própria conta, já mascarados pelo backend.
+  useEffect(() => {
+    let cancelled = false;
+    getProfileStatus()
+      .then((s) => {
+        if (!cancelled) setIdentity(s);
+      })
+      .catch(() => {
+        if (!cancelled) setIdentity(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,6 +71,19 @@ export default function ProfilePage() {
         <span className="mt-3 inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
           Plano Flyer
         </span>
+
+        {identity?.complete && (
+          <dl className="mt-4 grid w-full max-w-md grid-cols-2 gap-3 text-left">
+            <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
+              <dt className="text-xs text-gray-500">CPF</dt>
+              <dd className="font-mono text-sm text-gray-900">{identity.cpf_masked}</dd>
+            </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
+              <dt className="text-xs text-gray-500">Celular</dt>
+              <dd className="font-mono text-sm text-gray-900">{identity.phone_masked}</dd>
+            </div>
+          </dl>
+        )}
 
         <div className="mt-8 flex w-full max-w-md flex-col gap-3 sm:flex-row">
           <button

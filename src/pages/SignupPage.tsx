@@ -11,7 +11,10 @@ import {
 } from '../components/auth/AuthShell.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
 import { useCountdown } from '../hooks/useCountdown.ts';
-import { resendConfirmation, signUp } from '../services/authApi.ts';
+import { resendConfirmation } from '../services/authApi.ts';
+import { signUpWithEmail } from '../services/flyerApi.ts';
+import { formatApiError } from '../utils/apiError.ts';
+import { formatCpfInput, formatPhoneInput, identityProblems } from '../utils/brDocuments.ts';
 import { PASSWORD_RULE_TEXT, passwordProblems } from '../utils/passwordRules.ts';
 
 /** O Supabase só deixa enviar um e-mail destes por minuto. */
@@ -21,6 +24,8 @@ export default function SignupPage() {
   const { user } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [problems, setProblems] = useState<string[]>([]);
@@ -36,20 +41,22 @@ export default function SignupPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    const found = passwordProblems(password);
+    const found = [...identityProblems(cpf, phone), ...passwordProblems(password)];
     if (password !== confirm) found.push('As senhas não coincidem.');
     setProblems(found);
     if (found.length > 0) return;
 
     setBusy(true);
     const address = email.trim();
-    const result = await signUp(name.trim(), address, password);
-    setBusy(false);
-    if (!result.ok) {
-      setError(result.message);
+    try {
+      // Pelo backend: valida e diz se o e-mail, o CPF ou o celular já têm conta.
+      await signUpWithEmail({ name: name.trim(), email: address, cpf, phone, password });
+    } catch (err) {
+      setError(formatApiError(err));
+      setBusy(false);
       return;
     }
-    // Mesmo para um e-mail já registado o Supabase responde igual: não se revela quem tem conta.
+    setBusy(false);
     setSentTo(address);
     setResendAt(new Date(Date.now() + RESEND_WAIT_MS).toISOString());
   };
@@ -95,7 +102,14 @@ export default function SignupPage() {
   return (
     <AuthShell title="Criar conta" subtitle="Vamos enviar um link para confirmares o teu e-mail.">
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4" noValidate={false}>
-        {error && <AuthMessage tone="error">{error}</AuthMessage>}
+        {error && (
+          <AuthMessage tone="error">
+            {error}{' '}
+            <Link to="/forgot-password" className="font-semibold underline">
+              Esqueci a senha
+            </Link>
+          </AuthMessage>
+        )}
         <div>
           <label htmlFor="name" className={authLabel}>
             Nome
@@ -124,6 +138,39 @@ export default function SignupPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
+        </div>
+        <div>
+          <label htmlFor="cpf" className={authLabel}>
+            CPF
+          </label>
+          <input
+            id="cpf"
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            required
+            placeholder="000.000.000-00"
+            className={authInput}
+            value={cpf}
+            onChange={(e) => setCpf(formatCpfInput(e.target.value))}
+          />
+        </div>
+        <div>
+          <label htmlFor="phone" className={authLabel}>
+            Celular
+          </label>
+          <input
+            id="phone"
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel-national"
+            required
+            placeholder="(81) 91234-5678"
+            className={authInput}
+            value={phone}
+            onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
+          />
+          <p className="mt-1 text-xs text-gray-500">O CPF e o celular só tu vês. Cada um só pode ter uma conta.</p>
         </div>
         <div>
           <label htmlFor="password" className={authLabel}>

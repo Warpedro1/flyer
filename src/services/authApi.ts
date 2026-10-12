@@ -29,16 +29,6 @@ export async function signInWithPassword(email: string, password: string): Promi
   return error ? fail(error) : { ok: true };
 }
 
-/** Cria a conta; ela só fica ativa depois do link de confirmação enviado por e-mail. */
-export async function signUp(name: string, email: string, password: string): Promise<AuthResult> {
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { data: { full_name: name, name }, emailRedirectTo: `${origin()}/` },
-  });
-  return error ? fail(error) : { ok: true };
-}
-
 export async function resendConfirmation(email: string): Promise<AuthResult> {
   const { error } = await supabase.auth.resend({
     type: 'signup',

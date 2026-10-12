@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import AppLayout from './components/layout/AppLayout.tsx';
 import ChatPage from './pages/ChatPage.tsx';
 import CheckInPage from './pages/CheckInPage.tsx';
+import CompleteProfilePage from './pages/CompleteProfilePage.tsx';
 import CreateEventPage from './pages/CreateEventPage.tsx';
 import EditEventPage from './pages/EditEventPage.tsx';
 import DiscoverPage from './pages/DiscoverPage.tsx';
@@ -29,6 +30,7 @@ export default function App() {
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/complete-profile" element={<CompleteProfilePage />} />
       <Route element={<AppLayout />}>
         <Route path="/" element={<DiscoverPage />} />
         <Route path="/map" element={<MapPage />} />
