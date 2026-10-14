@@ -8,7 +8,7 @@ export type AccountGate = 'checking' | 'ok' | 'needs_code' | 'needs_signup_code'
 /**
  * O que falta à conta antes de mostrar a app (decisões 2026-10-12), por esta ordem:
  * 1. o código enviado por e-mail, numa sessão aberta com senha;
- * 2. o código do cadastro, posto no separador que o fez (decisão 2026-10-14);
+ * 2. o código do cadastro, posto no navegador que o fez (decisões 2026-10-14);
  * 3. o CPF e o celular (contas Google no 1.º acesso).
  * Quem impõe as regras é o backend (403); isto só evita mostrar a app antes do tempo.
  */

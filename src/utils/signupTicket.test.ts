@@ -2,17 +2,22 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { clearSignupTicket, readSignupTicket, saveSignupTicket } from './signupTicket.ts';
 
+const KEY = 'flyer.signupTicket';
+
 describe('signupTicket', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
+    localStorage.clear();
     sessionStorage.clear();
   });
 
-  it('guarda o bilhete e o e-mail só neste separador (sessionStorage)', () => {
+  it('guarda o bilhete e o e-mail neste navegador (localStorage), para qualquer separador', () => {
     saveSignupTicket({ ticket: 't'.repeat(43), email: 'ana@example.com' });
 
+    expect(localStorage.getItem(KEY)).not.toBeNull();
+    expect(sessionStorage.length).toBe(0);
     expect(readSignupTicket()).toEqual({ ticket: 't'.repeat(43), email: 'ana@example.com' });
-    expect(localStorage.length).toBe(0);
   });
 
   it('sem bilhete devolve null', () => {
@@ -27,8 +32,21 @@ describe('signupTicket', () => {
     expect(readSignupTicket()).toBeNull();
   });
 
+  it('passadas 24 h o bilhete já não conta e é apagado', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-14T12:00:00Z'));
+    saveSignupTicket({ ticket: 't'.repeat(43), email: 'ana@example.com' });
+
+    vi.setSystemTime(new Date('2026-10-15T11:59:00Z'));
+    expect(readSignupTicket()).not.toBeNull();
+
+    vi.setSystemTime(new Date('2026-10-15T12:01:00Z'));
+    expect(readSignupTicket()).toBeNull();
+    expect(localStorage.getItem(KEY)).toBeNull();
+  });
+
   it('um valor estragado conta como sem bilhete', () => {
-    sessionStorage.setItem('flyer.signupTicket', '{nao é json');
+    localStorage.setItem(KEY, '{nao é json');
 
     expect(readSignupTicket()).toBeNull();
   });
