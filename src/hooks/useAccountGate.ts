@@ -3,12 +3,13 @@ import { useEffect, useState } from 'react';
 import { getEmailCodeStatus, getProfileStatus } from '../services/flyerApi.ts';
 import { sessionNeedsEmailCode } from '../utils/sessionMethods.ts';
 
-export type AccountGate = 'checking' | 'ok' | 'needs_code' | 'needs_profile';
+export type AccountGate = 'checking' | 'ok' | 'needs_code' | 'needs_signup_code' | 'needs_profile';
 
 /**
  * O que falta à conta antes de mostrar a app (decisões 2026-10-12), por esta ordem:
  * 1. o código enviado por e-mail, numa sessão aberta com senha;
- * 2. o CPF e o celular (contas Google no 1.º acesso).
+ * 2. o código do cadastro, posto no separador que o fez (decisão 2026-10-14);
+ * 3. o CPF e o celular (contas Google no 1.º acesso).
  * Quem impõe as regras é o backend (403); isto só evita mostrar a app antes do tempo.
  */
 export function useAccountGate(accessToken: string | undefined, userId: string | undefined): AccountGate {
@@ -28,6 +29,7 @@ export function useAccountGate(accessToken: string | undefined, userId: string |
         if (code.required && !code.verified) return 'needs_code' as const;
       }
       const profile = await getProfileStatus();
+      if (profile.pending) return 'needs_signup_code' as const;
       return profile.complete ? ('ok' as const) : ('needs_profile' as const);
     })()
       .then((next) => {

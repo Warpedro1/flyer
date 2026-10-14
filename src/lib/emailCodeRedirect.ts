@@ -4,14 +4,19 @@ export const EMAIL_CODE_PATH = '/login/code';
 /** `detail` do backend quando a conta ainda não tem CPF e celular. */
 export const PROFILE_INCOMPLETE = 'profile_incomplete';
 export const COMPLETE_PROFILE_PATH = '/complete-profile';
+/** `detail` do backend quando o código do cadastro ainda não foi posto no seu separador. */
+export const SIGNUP_PENDING = 'signup_pending';
+export const SIGNUP_CODE_PATH = '/signup/code';
 
 const TARGETS: Record<string, string> = {
   [EMAIL_CODE_REQUIRED]: EMAIL_CODE_PATH,
   [PROFILE_INCOMPLETE]: COMPLETE_PROFILE_PATH,
+  [SIGNUP_PENDING]: SIGNUP_CODE_PATH,
 };
 
 /**
- * Se o backend recusou por falta do código do e-mail ou do CPF/celular, vai para o ecrã
+ * Se o backend recusou por falta do código do e-mail, do código do cadastro ou do
+ * CPF/celular, vai para o ecrã
  * que resolve isso. Devolve se era um desses casos. Nunca termina a sessão.
  */
 export function redirectIfEmailCodeRequired(

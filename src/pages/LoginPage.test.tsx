@@ -4,16 +4,16 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { fakeAccessToken } from '../test/tokens.ts';
+import { saveSignupTicket } from '../utils/signupTicket.ts';
 
 import LoginPage from './LoginPage.tsx';
 
 const signInWithPassword = vi.hoisted(() => vi.fn());
-const resendConfirmation = vi.hoisted(() => vi.fn());
 const auth = vi.hoisted(() => ({
   value: { user: null as unknown, session: null as unknown, loading: false, signInWithGoogle: vi.fn(), signOut: vi.fn() },
 }));
 
-vi.mock('../services/authApi.ts', () => ({ signInWithPassword, resendConfirmation }));
+vi.mock('../services/authApi.ts', () => ({ signInWithPassword }));
 vi.mock('../hooks/useAuth.ts', () => ({ useAuth: () => auth.value }));
 
 function renderPage() {
@@ -39,7 +39,7 @@ async function fill(user: ReturnType<typeof userEvent.setup>, email = 'ana@examp
 describe('LoginPage', () => {
   beforeEach(() => {
     signInWithPassword.mockReset();
-    resendConfirmation.mockReset();
+    sessionStorage.clear();
     auth.value = { ...auth.value, user: null, session: null, loading: false };
   });
 
@@ -85,21 +85,35 @@ describe('LoginPage', () => {
     expect(await screen.findByText('E-mail ou senha incorretos.')).toBeInTheDocument();
   });
 
-  it('com o e-mail por confirmar oferece reenviar o link', async () => {
+  it('com o cadastro por concluir leva a pôr o código, se este separador tiver o bilhete', async () => {
     const user = userEvent.setup();
+    saveSignupTicket({ ticket: 't'.repeat(43), email: 'ana@example.com' });
     signInWithPassword.mockResolvedValue({
       ok: false,
       code: 'email_not_confirmed',
-      message: 'Confirma o teu e-mail: abre o link que te enviámos.',
+      message: 'O cadastro não foi concluído.',
     });
-    resendConfirmation.mockResolvedValue({ ok: true });
     renderPage();
 
     await fill(user);
-    await user.click(await screen.findByRole('button', { name: /reenviar link/i }));
 
-    expect(resendConfirmation).toHaveBeenCalledWith('ana@example.com');
-    expect(await screen.findByText(/enviámos um novo link/i)).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /pôr o código/i })).toHaveAttribute('href', '/signup/code');
+    expect(screen.queryByRole('button', { name: /reenviar link/i })).not.toBeInTheDocument();
+  });
+
+  it('com o cadastro por concluir e sem bilhete, leva a fazer o cadastro outra vez', async () => {
+    const user = userEvent.setup();
+    sessionStorage.clear();
+    signInWithPassword.mockResolvedValue({
+      ok: false,
+      code: 'email_not_confirmed',
+      message: 'O cadastro não foi concluído.',
+    });
+    renderPage();
+
+    await fill(user);
+
+    expect(await screen.findByRole('link', { name: /fazer o cadastro outra vez/i })).toHaveAttribute('href', '/signup');
   });
 
   it('quem já entrou com o Google vai para o início', () => {

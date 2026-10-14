@@ -3,14 +3,14 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { readSignupTicket } from '../utils/signupTicket.ts';
+
 import SignupPage from './SignupPage.tsx';
 
 const signUpWithEmail = vi.hoisted(() => vi.fn());
-const resendConfirmation = vi.hoisted(() => vi.fn());
 
 // O cadastro vai pelo backend (valida CPF/celular e diz o que já tem conta).
 vi.mock('../services/flyerApi.ts', () => ({ signUpWithEmail }));
-vi.mock('../services/authApi.ts', () => ({ resendConfirmation }));
 vi.mock('../hooks/useAuth.ts', () => ({
   useAuth: () => ({ user: null, session: null, loading: false, signInWithGoogle: vi.fn(), signOut: vi.fn() }),
 }));
@@ -21,6 +21,7 @@ function renderPage() {
       <Routes>
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/login" element={<p>Ecrã de login</p>} />
+        <Route path="/signup/code" element={<p>Ecrã do código do cadastro</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -48,8 +49,8 @@ async function fill(
 
 describe('SignupPage', () => {
   beforeEach(() => {
-    signUpWithEmail.mockReset().mockResolvedValue(undefined);
-    resendConfirmation.mockReset().mockResolvedValue({ ok: true });
+    sessionStorage.clear();
+    signUpWithEmail.mockReset().mockResolvedValue({ ticket: 't'.repeat(43) });
   });
 
   it('mostra a regra da senha', () => {
@@ -100,7 +101,7 @@ describe('SignupPage', () => {
     expect(signUpWithEmail).not.toHaveBeenCalled();
   });
 
-  it('cria a conta com o nome e pede para confirmar o e-mail', async () => {
+  it('cria a conta com o nome e vai pôr o código, com o bilhete só neste separador', async () => {
     const user = userEvent.setup();
     renderPage();
 
@@ -115,9 +116,15 @@ describe('SignupPage', () => {
         password: 'frevo2026',
       }),
     );
-    expect(await screen.findByText(/enviámos um link para ana@example.com/i)).toBeInTheDocument();
-    // Pode reenviar, mas não já: o Supabase só deixa um e-mail por minuto.
-    expect(screen.getByRole('button', { name: /reenviar/i })).toBeDisabled();
+    expect(await screen.findByText('Ecrã do código do cadastro')).toBeInTheDocument();
+    expect(readSignupTicket()).toEqual({ ticket: 't'.repeat(43), email: 'ana@example.com' });
+  });
+
+  it('não fala em link: o e-mail traz um código', () => {
+    renderPage();
+
+    expect(screen.queryByText(/link/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/código/i)).toBeInTheDocument();
   });
 
   it('diz o que já tem conta e oferece recuperar a senha', async () => {

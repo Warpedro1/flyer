@@ -148,6 +148,9 @@ export default function AppLayout() {
   if (gate === 'needs_code') {
     return <Navigate to="/login/code" replace />;
   }
+  if (gate === 'needs_signup_code') {
+    return <Navigate to="/signup/code" replace />;
+  }
   if (gate === 'needs_profile') {
     return <Navigate to="/complete-profile" replace />;
   }
