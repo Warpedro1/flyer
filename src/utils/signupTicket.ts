@@ -1,8 +1,10 @@
 /**
- * O bilhete que liga o código do cadastro ao separador que o fez (decisão 2026-10-14).
+ * O bilhete que liga o código do cadastro ao navegador que o fez (decisões 2026-10-14).
  *
- * Fica em `sessionStorage`, que é só deste separador: o código que chega por e-mail
- * não ativa a conta noutro sítio (nem nas mãos de quem recebeu o e-mail por engano).
+ * Fica em `localStorage`: vale em qualquer separador ou janela deste navegador, mesmo
+ * depois de o fechar, mas não noutro aparelho ou navegador (nem nas mãos de quem
+ * recebeu o e-mail por engano). Passadas 24 h deixa de contar: um cadastro novo
+ * substitui a conta pendente.
  */
 export interface SignupTicket {
   ticket: string;
@@ -10,38 +12,47 @@ export interface SignupTicket {
 }
 
 const KEY = 'flyer.signupTicket';
+const MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+interface StoredTicket extends SignupTicket {
+  savedAt: number;
+}
+
+function isStoredTicket(value: unknown): value is StoredTicket {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as Partial<StoredTicket>;
+  return typeof v.ticket === 'string' && typeof v.email === 'string' && typeof v.savedAt === 'number';
+}
 
 export function saveSignupTicket(value: SignupTicket): void {
   try {
-    sessionStorage.setItem(KEY, JSON.stringify(value));
+    const stored: StoredTicket = { ticket: value.ticket, email: value.email, savedAt: Date.now() };
+    localStorage.setItem(KEY, JSON.stringify(stored));
   } catch {
     // Sem armazenamento (modo privado bloqueado): o ecrã do código explica o que fazer.
   }
 }
 
-export function readSignupTicket(): SignupTicket | null {
+export function clearSignupTicket(): void {
   try {
-    const raw = sessionStorage.getItem(KEY);
-    if (!raw) return null;
-    const parsed: unknown = JSON.parse(raw);
-    if (
-      typeof parsed === 'object' &&
-      parsed !== null &&
-      typeof (parsed as SignupTicket).ticket === 'string' &&
-      typeof (parsed as SignupTicket).email === 'string'
-    ) {
-      return { ticket: (parsed as SignupTicket).ticket, email: (parsed as SignupTicket).email };
-    }
-    return null;
+    localStorage.removeItem(KEY);
   } catch {
-    return null;
+    // Nada a limpar.
   }
 }
 
-export function clearSignupTicket(): void {
+export function readSignupTicket(): SignupTicket | null {
   try {
-    sessionStorage.removeItem(KEY);
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!isStoredTicket(parsed)) return null;
+    if (Date.now() - parsed.savedAt > MAX_AGE_MS) {
+      clearSignupTicket();
+      return null;
+    }
+    return { ticket: parsed.ticket, email: parsed.email };
   } catch {
-    // Nada a limpar.
+    return null;
   }
 }

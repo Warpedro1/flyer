@@ -164,7 +164,7 @@ describe('AppLayout — código do login por e-mail', () => {
     expect(await screen.findByText('Ecrã do código')).toBeInTheDocument();
   });
 
-  it('um cadastro sem o código posto no seu separador vai pôr o código', async () => {
+  it('um cadastro sem o código posto vai pôr o código', async () => {
     withSession(['otp']);
     getProfileStatus.mockResolvedValueOnce({ complete: true, pending: true, cpf_masked: null, phone_masked: null });
 

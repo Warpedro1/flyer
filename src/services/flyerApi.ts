@@ -266,14 +266,14 @@ export interface SignupResponse {
 
 /**
  * Cria a conta (pendente). Devolve o bilhete que liga o código do e-mail a este
- * separador (decisão 2026-10-14).
+ * navegador (decisões 2026-10-14).
  */
 export async function signUpWithEmail(req: SignUpRequest): Promise<SignupResponse> {
   const { data } = await apiClient.post<SignupResponse>('/auth/signup', req);
   return data;
 }
 
-/** Ativa a conta com o bilhete do separador que fez o cadastro (depois do código). */
+/** Ativa a conta com o bilhete do navegador que fez o cadastro (depois do código). */
 export async function activateSignup(ticket: string): Promise<void> {
   await apiClient.post('/auth/signup/activate', { ticket });
 }
@@ -281,7 +281,7 @@ export async function activateSignup(ticket: string): Promise<void> {
 /** CPF e celular da própria conta (mascarados) e se já estão preenchidos. */
 export interface ProfileStatus {
   complete: boolean;
-  /** Cadastro por e-mail à espera do código no separador que o fez. */
+  /** Cadastro por e-mail à espera do código no navegador que o fez. */
   pending?: boolean;
   cpf_masked: string | null;
   phone_masked: string | null;

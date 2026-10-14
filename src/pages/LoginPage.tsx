@@ -66,7 +66,7 @@ export default function LoginPage() {
     setUnconfirmed(result.code === 'email_not_confirmed');
   };
 
-  // Cadastro sem o código posto: só o separador que o fez o pode concluir (2026-10-14).
+  // Cadastro sem o código posto: só o navegador que o fez o pode concluir (2026-10-14).
   const hasSignupTicket = unconfirmed && readSignupTicket() !== null;
 
   return (

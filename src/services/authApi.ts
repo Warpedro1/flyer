@@ -38,7 +38,7 @@ export async function resendConfirmation(email: string): Promise<AuthResult> {
 
 /**
  * Confere o código do cadastro e abre a sessão. Sozinho não ativa a conta: falta o
- * bilhete deste separador (`activateSignup`), que o backend exige.
+ * bilhete deste navegador (`activateSignup`), que o backend exige.
  */
 export async function verifySignupCode(email: string, code: string): Promise<AuthResult> {
   const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });

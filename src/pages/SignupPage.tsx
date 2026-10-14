@@ -44,7 +44,7 @@ export default function SignupPage() {
     try {
       // Pelo backend: valida e diz se o e-mail, o CPF ou o celular já têm conta.
       const { ticket } = await signUpWithEmail({ name: name.trim(), email: address, cpf, phone, password });
-      // O código do e-mail só ativa a conta neste separador (decisão 2026-10-14).
+      // O código do e-mail só ativa a conta neste navegador (decisões 2026-10-14).
       saveSignupTicket({ ticket, email: address.toLowerCase() });
     } catch (err) {
       setError(formatApiError(err));

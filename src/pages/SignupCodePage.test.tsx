@@ -47,7 +47,7 @@ function forbidden(detail: string): AxiosError {
 
 describe('SignupCodePage', () => {
   beforeEach(() => {
-    sessionStorage.clear();
+    localStorage.clear();
     verifySignupCode.mockReset().mockResolvedValue({ ok: true });
     resendConfirmation.mockReset().mockResolvedValue({ ok: true });
     activateSignup.mockReset().mockResolvedValue(undefined);
@@ -56,13 +56,20 @@ describe('SignupCodePage', () => {
     saveSignupTicket({ ticket: TICKET, email: 'ana@example.com' });
   });
 
+  it('vale em qualquer separador deste navegador (o bilhete fica no localStorage)', () => {
+    // O cadastro guardou o bilhete; este ecrã é aberto noutro separador.
+    renderPage();
+
+    expect(screen.getByLabelText(/código/i)).toBeInTheDocument();
+  });
+
   it('diz para onde foi o código', () => {
     renderPage();
 
     expect(screen.getByText(/ana@example.com/)).toBeInTheDocument();
   });
 
-  it('o código certo ativa a conta com o bilhete deste separador e entra', async () => {
+  it('o código certo ativa a conta com o bilhete deste navegador e entra', async () => {
     const user = userEvent.setup();
     renderPage();
 
@@ -139,19 +146,19 @@ describe('SignupCodePage', () => {
     expect(readSignupTicket()).toBeNull();
   });
 
-  it('noutro separador (sem bilhete) não deixa ativar e explica porquê', () => {
-    sessionStorage.clear();
+  it('noutro navegador (sem bilhete) não deixa ativar e explica porquê', () => {
+    localStorage.clear();
 
     renderPage();
 
-    expect(screen.getByText(/separador onde fizeste o cadastro/i)).toBeInTheDocument();
+    expect(screen.getByText(/navegador onde fizeste o cadastro/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/código/i)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /fazer o cadastro outra vez/i })).toHaveAttribute('href', '/signup');
   });
 
   it('sem bilhete e com sessão (o código sozinho), oferece sair', async () => {
     const user = userEvent.setup();
-    sessionStorage.clear();
+    localStorage.clear();
     auth.value = { ...auth.value, user: { id: 'user-9', email: 'ana@example.com' }, session: {} };
     renderPage();
 

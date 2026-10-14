@@ -39,7 +39,7 @@ async function fill(user: ReturnType<typeof userEvent.setup>, email = 'ana@examp
 describe('LoginPage', () => {
   beforeEach(() => {
     signInWithPassword.mockReset();
-    sessionStorage.clear();
+    localStorage.clear();
     auth.value = { ...auth.value, user: null, session: null, loading: false };
   });
 
@@ -85,7 +85,7 @@ describe('LoginPage', () => {
     expect(await screen.findByText('E-mail ou senha incorretos.')).toBeInTheDocument();
   });
 
-  it('com o cadastro por concluir leva a pôr o código, se este separador tiver o bilhete', async () => {
+  it('com o cadastro por concluir leva a pôr o código, se este navegador tiver o bilhete', async () => {
     const user = userEvent.setup();
     saveSignupTicket({ ticket: 't'.repeat(43), email: 'ana@example.com' });
     signInWithPassword.mockResolvedValue({
@@ -103,7 +103,7 @@ describe('LoginPage', () => {
 
   it('com o cadastro por concluir e sem bilhete, leva a fazer o cadastro outra vez', async () => {
     const user = userEvent.setup();
-    sessionStorage.clear();
+    localStorage.clear();
     signInWithPassword.mockResolvedValue({
       ok: false,
       code: 'email_not_confirmed',

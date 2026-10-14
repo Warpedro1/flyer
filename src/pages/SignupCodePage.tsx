@@ -21,7 +21,7 @@ const RESEND_WAIT_MS = 60_000;
 
 /**
  * Último passo do cadastro: o código de 6 dígitos enviado por e-mail (decisão
- * 2026-10-14). Só funciona no separador que fez o cadastro, que guarda o bilhete;
+ * 2026-10-14). Só funciona no navegador que fez o cadastro, que guarda o bilhete;
  * quem tiver só o código (o e-mail escrito mal) não ativa a conta.
  */
 export default function SignupCodePage() {
@@ -44,8 +44,8 @@ export default function SignupCodePage() {
       <AuthShell title="Ativar conta">
         <div className="space-y-4">
           <AuthMessage tone="info">
-            Por segurança, o código só ativa a conta no separador onde fizeste o cadastro. Se o fechaste,
-            faz o cadastro outra vez: enviamos um código novo.
+            Por segurança, o código só ativa a conta no navegador onde fizeste o cadastro. Abre-o lá, ou
+            faz o cadastro outra vez aqui: enviamos um código novo.
           </AuthMessage>
           <Link to="/signup" className={`${authPrimaryButton} block text-center`}>
             Fazer o cadastro outra vez

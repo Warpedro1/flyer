@@ -49,7 +49,7 @@ async function fill(
 
 describe('SignupPage', () => {
   beforeEach(() => {
-    sessionStorage.clear();
+    localStorage.clear();
     signUpWithEmail.mockReset().mockResolvedValue({ ticket: 't'.repeat(43) });
   });
 
@@ -101,7 +101,7 @@ describe('SignupPage', () => {
     expect(signUpWithEmail).not.toHaveBeenCalled();
   });
 
-  it('cria a conta com o nome e vai pôr o código, com o bilhete só neste separador', async () => {
+  it('cria a conta com o nome e vai pôr o código, com o bilhete guardado neste navegador', async () => {
     const user = userEvent.setup();
     renderPage();
 
