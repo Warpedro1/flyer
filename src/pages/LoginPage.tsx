@@ -10,8 +10,9 @@ import {
   authPrimaryButton,
 } from '../components/auth/AuthShell.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
-import { resendConfirmation, signInWithPassword } from '../services/authApi.ts';
+import { signInWithPassword } from '../services/authApi.ts';
 import { sessionNeedsEmailCode } from '../utils/sessionMethods.ts';
+import { readSignupTicket } from '../utils/signupTicket.ts';
 
 function GoogleIcon() {
   return (
@@ -32,7 +33,6 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unconfirmed, setUnconfirmed] = useState(false);
-  const [resent, setResent] = useState(false);
 
   if (loading) {
     return (
@@ -55,7 +55,6 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     setUnconfirmed(false);
-    setResent(false);
     setBusy(true);
     const result = await signInWithPassword(email.trim(), password);
     setBusy(false);
@@ -67,30 +66,21 @@ export default function LoginPage() {
     setUnconfirmed(result.code === 'email_not_confirmed');
   };
 
-  const handleResend = async () => {
-    const result = await resendConfirmation(email.trim());
-    if (result.ok) {
-      setResent(true);
-    } else {
-      setError(result.message);
-    }
-  };
+  // Cadastro sem o código posto: só o separador que o fez o pode concluir (2026-10-14).
+  const hasSignupTicket = unconfirmed && readSignupTicket() !== null;
 
   return (
     <AuthShell title="Entrar no Flyer" subtitle="Descobre eventos e lugares e faz check-in.">
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
         {error && <AuthMessage tone="error">{error}</AuthMessage>}
         {unconfirmed && (
-          <button
-            type="button"
-            onClick={() => void handleResend()}
-            disabled={resent}
-            className="w-full rounded-xl border border-red-200 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
+          <Link
+            to={hasSignupTicket ? '/signup/code' : '/signup'}
+            className="block w-full rounded-xl border border-red-200 py-2.5 text-center text-sm font-semibold text-red-600 hover:bg-red-50"
           >
-            Reenviar link de confirmação
-          </button>
+            {hasSignupTicket ? 'Pôr o código do cadastro' : 'Fazer o cadastro outra vez'}
+          </Link>
         )}
-        {resent && <AuthMessage tone="success">Enviámos um novo link de confirmação.</AuthMessage>}
         <div>
           <label htmlFor="email" className={authLabel}>
             E-mail

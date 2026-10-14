@@ -8,7 +8,8 @@ export type AuthResult = { ok: true } | { ok: false; code: string; message: stri
 const MESSAGES: Record<string, string> = {
   // Igual para e-mail inexistente e senha errada: não se revela quem tem conta.
   invalid_credentials: 'E-mail ou senha incorretos.',
-  email_not_confirmed: 'Confirma o teu e-mail: abre o link que te enviámos.',
+  email_not_confirmed: 'O cadastro deste e-mail não foi concluído: falta o código que te enviámos.',
+  otp_expired: 'Código inválido ou expirado.',
   weak_password: 'Esta senha é fraca ou já apareceu numa fuga de dados. Escolhe outra.',
   same_password: 'A senha nova tem de ser diferente da anterior.',
   over_email_send_rate_limit: 'Muitos pedidos seguidos. Espera um minuto e tenta outra vez.',
@@ -29,13 +30,22 @@ export async function signInWithPassword(email: string, password: string): Promi
   return error ? fail(error) : { ok: true };
 }
 
+/** Reenvia o código do cadastro (o e-mail não traz link: decisão 2026-10-14). */
 export async function resendConfirmation(email: string): Promise<AuthResult> {
-  const { error } = await supabase.auth.resend({
-    type: 'signup',
-    email,
-    options: { emailRedirectTo: `${origin()}/` },
-  });
+  const { error } = await supabase.auth.resend({ type: 'signup', email });
   return error ? fail(error) : { ok: true };
+}
+
+/**
+ * Confere o código do cadastro e abre a sessão. Sozinho não ativa a conta: falta o
+ * bilhete deste separador (`activateSignup`), que o backend exige.
+ */
+export async function verifySignupCode(email: string, code: string): Promise<AuthResult> {
+  const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
+  if (!error) return { ok: true };
+  const result = fail(error);
+  // O Supabase responde 403 a um código errado ou vencido.
+  return result.ok || result.code !== 'unknown' ? result : { ...result, message: MESSAGES.otp_expired };
 }
 
 /** Envia o link para criar uma senha nova (abre em /reset-password). */

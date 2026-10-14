@@ -13,6 +13,7 @@ import EmailCodePage from './pages/EmailCodePage.tsx';
 import ForgotPasswordPage from './pages/ForgotPasswordPage.tsx';
 import LoginPage from './pages/LoginPage.tsx';
 import ResetPasswordPage from './pages/ResetPasswordPage.tsx';
+import SignupCodePage from './pages/SignupCodePage.tsx';
 import SignupPage from './pages/SignupPage.tsx';
 import MapPage from './pages/MapPage.tsx';
 import MyEventsPage from './pages/MyEventsPage.tsx';
@@ -28,6 +29,7 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/login/code" element={<EmailCodePage />} />
       <Route path="/signup" element={<SignupPage />} />
+      <Route path="/signup/code" element={<SignupCodePage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/complete-profile" element={<CompleteProfilePage />} />

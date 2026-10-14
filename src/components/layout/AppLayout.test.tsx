@@ -106,6 +106,7 @@ describe('AppLayout — código do login por e-mail', () => {
           </Route>
           <Route path="/login/code" element={<p>Ecrã do código</p>} />
           <Route path="/complete-profile" element={<p>Completar cadastro</p>} />
+          <Route path="/signup/code" element={<p>Código do cadastro</p>} />
         </Routes>
       </MemoryRouter>,
     );
@@ -113,6 +114,8 @@ describe('AppLayout — código do login por e-mail', () => {
 
   beforeEach(() => {
     getEmailCodeStatus.mockReset();
+    // Um `Once` que um teste não chegou a usar (o código vem antes) não passa ao seguinte.
+    getProfileStatus.mockReset().mockResolvedValue({ complete: true, cpf_masked: null, phone_masked: null });
   });
 
   it('quem entrou com a senha e não pôs o código vai para o código', async () => {
@@ -159,5 +162,14 @@ describe('AppLayout — código do login por e-mail', () => {
     renderWithCodeRoute();
 
     expect(await screen.findByText('Ecrã do código')).toBeInTheDocument();
+  });
+
+  it('um cadastro sem o código posto no seu separador vai pôr o código', async () => {
+    withSession(['otp']);
+    getProfileStatus.mockResolvedValueOnce({ complete: true, pending: true, cpf_masked: null, phone_masked: null });
+
+    renderWithCodeRoute();
+
+    expect(await screen.findByText('Código do cadastro')).toBeInTheDocument();
   });
 });

@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 
 import {
   AuthMessage,
@@ -10,18 +10,15 @@ import {
   authPrimaryButton,
 } from '../components/auth/AuthShell.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
-import { useCountdown } from '../hooks/useCountdown.ts';
-import { resendConfirmation } from '../services/authApi.ts';
 import { signUpWithEmail } from '../services/flyerApi.ts';
 import { formatApiError } from '../utils/apiError.ts';
 import { formatCpfInput, formatPhoneInput, identityProblems } from '../utils/brDocuments.ts';
 import { PASSWORD_RULE_TEXT, passwordProblems } from '../utils/passwordRules.ts';
-
-/** O Supabase só deixa enviar um e-mail destes por minuto. */
-const RESEND_WAIT_MS = 60_000;
+import { saveSignupTicket } from '../utils/signupTicket.ts';
 
 export default function SignupPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [cpf, setCpf] = useState('');
@@ -31,10 +28,6 @@ export default function SignupPage() {
   const [problems, setProblems] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [sentTo, setSentTo] = useState<string | null>(null);
-  const [resendAt, setResendAt] = useState<string | null>(null);
-  const [resent, setResent] = useState(false);
-  const wait = useCountdown(resendAt);
 
   if (user) return <Navigate to="/" replace />;
 
@@ -50,57 +43,19 @@ export default function SignupPage() {
     const address = email.trim();
     try {
       // Pelo backend: valida e diz se o e-mail, o CPF ou o celular já têm conta.
-      await signUpWithEmail({ name: name.trim(), email: address, cpf, phone, password });
+      const { ticket } = await signUpWithEmail({ name: name.trim(), email: address, cpf, phone, password });
+      // O código do e-mail só ativa a conta neste separador (decisão 2026-10-14).
+      saveSignupTicket({ ticket, email: address.toLowerCase() });
     } catch (err) {
       setError(formatApiError(err));
       setBusy(false);
       return;
     }
-    setBusy(false);
-    setSentTo(address);
-    setResendAt(new Date(Date.now() + RESEND_WAIT_MS).toISOString());
+    void navigate('/signup/code', { replace: true });
   };
-
-  const handleResend = async () => {
-    if (!sentTo) return;
-    const result = await resendConfirmation(sentTo);
-    if (result.ok) {
-      setResent(true);
-      setResendAt(new Date(Date.now() + RESEND_WAIT_MS).toISOString());
-    } else {
-      setError(result.message);
-    }
-  };
-
-  if (sentTo) {
-    return (
-      <AuthShell title="Confirma o teu e-mail">
-        <div className="space-y-4">
-          <AuthMessage tone="success">
-            Enviámos um link para {sentTo}. Abre-o para ativar a conta e depois entra com a tua senha.
-          </AuthMessage>
-          {resent && <AuthMessage tone="info">Enviámos outro link.</AuthMessage>}
-          {error && <AuthMessage tone="error">{error}</AuthMessage>}
-          <button
-            type="button"
-            onClick={() => void handleResend()}
-            disabled={!wait.expired}
-            className="w-full rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
-          >
-            {wait.expired ? 'Reenviar link' : `Reenviar link (${wait.label})`}
-          </button>
-          <p className="text-center text-sm">
-            <Link to="/login" className={authLink}>
-              Voltar ao login
-            </Link>
-          </p>
-        </div>
-      </AuthShell>
-    );
-  }
 
   return (
-    <AuthShell title="Criar conta" subtitle="Vamos enviar um link para confirmares o teu e-mail.">
+    <AuthShell title="Criar conta" subtitle="Vamos enviar um código de 6 dígitos para confirmares o teu e-mail.">
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4" noValidate={false}>
         {error && (
           <AuthMessage tone="error">

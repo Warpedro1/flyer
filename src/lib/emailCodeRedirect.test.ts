@@ -48,3 +48,12 @@ describe('profile_incomplete', () => {
     expect(go).not.toHaveBeenCalled();
   });
 });
+
+describe('signup_pending', () => {
+  it('um 403 signup_pending leva ao código do cadastro', () => {
+    const go = vi.fn();
+
+    expect(redirectIfEmailCodeRequired(error(403, 'signup_pending'), '/events', go)).toBe(true);
+    expect(go).toHaveBeenCalledWith('/signup/code');
+  });
+});
