@@ -4,6 +4,7 @@ import { AxiosError, AxiosHeaders } from 'axios';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { apiResponseError } from '../test/axiosErrors.ts';
 import { fakeAccessToken } from '../test/tokens.ts';
 
 import EmailCodePage from './EmailCodePage.tsx';
@@ -127,5 +128,29 @@ describe('EmailCodePage', () => {
 
     expect(screen.getByText('Início')).toBeInTheDocument();
     expect(sendEmailCode).not.toHaveBeenCalled();
+  });
+
+  it('uma conta que já não existe (session_invalid) termina a sessão e volta ao login', async () => {
+    sendEmailCode.mockRejectedValue(
+      apiResponseError(401, { detail: 'Sessão inválida: entra outra vez.', code: 'session_invalid' }),
+    );
+
+    renderPage();
+
+    expect(await screen.findByText('Ecrã de login')).toBeInTheDocument();
+    expect(signOut).toHaveBeenCalled();
+  });
+
+  it('um código pedido há menos de 1 minuto diz isso mesmo', async () => {
+    sendEmailCode.mockRejectedValue(
+      apiResponseError(429, {
+        detail: 'Já enviámos um código há menos de 1 minuto. Espera um pouco e pede outro.',
+        code: 'email_code_recently_sent',
+      }),
+    );
+
+    renderPage();
+
+    expect(await screen.findByText(/menos de 1 minuto/)).toBeInTheDocument();
   });
 });

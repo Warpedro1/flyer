@@ -5,7 +5,7 @@ import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { WingHeartLogo } from '../components/layout/WingHeartLogo.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
 import { completeOnboarding, getChatHistory, sendChatMessage } from '../services/flyerApi.ts';
-import { formatApiError } from '../utils/apiError.ts';
+import { errorReference, formatApiError, getApiErrorInfo } from '../utils/apiError.ts';
 import {
   MIN_CHAT_ASSISTANT_DISPLAY_MS,
   SIMULATED_ONBOARDING_ASSISTANT_DELAY_MS,
@@ -21,6 +21,7 @@ import {
   persistGuideCompletion,
   isGuideMarkedDoneInStorage,
 } from '../utils/chatGuide.ts';
+import { clearOnboardingDraft, readOnboardingDraft, saveOnboardingDraft } from '../utils/onboardingDraft.ts';
 
 const ONBOARDING_USER_REJECTED_MSG =
   'Não consegui te ajudar com isso. Por favor, tente novamente.';
@@ -45,6 +46,8 @@ export default function ChatPage() {
   const [sending, setSending] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Respostas completas cujo envio falhou do nosso lado: "Tentar de novo" reenvia-as (#26).
+  const [retryAnswers, setRetryAnswers] = useState<GuideAnswers | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(true);
   const didInitRef = useRef(false);
@@ -64,12 +67,27 @@ export default function ChatPage() {
       const firstName = getFirstNameFromUserMetadata(
         user?.user_metadata as Record<string, unknown> | undefined,
       );
-      setLines([
+      // Respostas desta aba que ainda não chegaram ao backend (recarregou, ou falhou).
+      const draft = user?.id ? readOnboardingDraft(user.id) : {};
+      let answered = 0;
+      while (answered < GUIDE_STEPS.length && draft[GUIDE_STEPS[answered].key]) answered += 1;
+      const restored: ChatLine[] = [
         { id: crypto.randomUUID(), role: 'assistant', content: getGuideIntroMessage(firstName) },
-        { id: crypto.randomUUID(), role: 'assistant', content: getQuestionMessage(0) },
-      ]);
+      ];
+      for (let i = 0; i < answered; i += 1) {
+        restored.push(
+          { id: crypto.randomUUID(), role: 'assistant', content: getQuestionMessage(i) },
+          { id: crypto.randomUUID(), role: 'user', content: draft[GUIDE_STEPS[i].key] ?? '' },
+        );
+      }
+      if (answered < GUIDE_STEPS.length) {
+        restored.push({ id: crypto.randomUUID(), role: 'assistant', content: getQuestionMessage(answered) });
+      }
+      setLines(restored);
+      setGuideAnswers(draft);
       setPhase('onboarding');
-      setOnboardingStep(0);
+      setOnboardingStep(Math.min(answered, GUIDE_STEPS.length - 1));
+      setRetryAnswers(answered === GUIDE_STEPS.length ? draft : null);
     };
 
     let cancelled = false;
@@ -138,30 +156,45 @@ export default function ChatPage() {
     }
   }, [lines]);
 
-  const completeLastOnboardingStep = useCallback(async (nextAnswers: GuideAnswers) => {
-    try {
-      const payload = guideAnswersToCompletePayload(nextAnswers);
-      await completeOnboarding({ answers: payload });
-      if (!mountedRef.current) return;
-      persistGuideCompletion();
-      const closing: ChatLine = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: getGuideClosingText(nextAnswers),
-      };
-      setLines((prev) => [...prev, closing]);
-      setPhase('chat');
-    } catch (err) {
-      if (!mountedRef.current) return;
-      if (axios.isAxiosError(err) && err.response?.status === 422) {
-        setError(ONBOARDING_USER_REJECTED_MSG);
-      } else {
-        setError(ONBOARDING_SERVER_FAIL_MSG);
+  const userId = user?.id;
+  const completeLastOnboardingStep = useCallback(
+    async (nextAnswers: GuideAnswers) => {
+      setRetryAnswers(null);
+      try {
+        const payload = guideAnswersToCompletePayload(nextAnswers);
+        await completeOnboarding({ answers: payload });
+        if (!mountedRef.current) return;
+        persistGuideCompletion();
+        if (userId) clearOnboardingDraft(userId);
+        const closing: ChatLine = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: getGuideClosingText(nextAnswers),
+        };
+        setLines((prev) => [...prev, closing]);
+        setPhase('chat');
+      } catch (err) {
+        if (!mountedRef.current) return;
+        if (axios.isAxiosError(err) && err.response?.status === 422) {
+          setError(ONBOARDING_USER_REJECTED_MSG);
+        } else {
+          // Do nosso lado: diz o código e deixa reenviar as mesmas respostas.
+          setError(ONBOARDING_SERVER_FAIL_MSG + errorReference(getApiErrorInfo(err)));
+          setRetryAnswers(nextAnswers);
+        }
+      } finally {
+        if (mountedRef.current) setSending(false);
       }
-    } finally {
-      if (mountedRef.current) setSending(false);
-    }
-  }, []);
+    },
+    [userId],
+  );
+
+  const handleRetry = () => {
+    if (!retryAnswers || sending) return;
+    setError(null);
+    setSending(true);
+    void completeLastOnboardingStep(retryAnswers);
+  };
 
   const handleOnboardingReply = (text: string) => {
     clearOnboardingAssistantTimer();
@@ -170,6 +203,7 @@ export default function ChatPage() {
     const key = step.key;
     const nextAnswers: GuideAnswers = { ...guideAnswers, [key]: text };
     setGuideAnswers(nextAnswers);
+    if (userId) saveOnboardingDraft(userId, nextAnswers);
 
     const userLine: ChatLine = {
       id: crypto.randomUUID(),
@@ -270,6 +304,18 @@ export default function ChatPage() {
       {error && (
         <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800" role="alert">
           {error}
+        </div>
+      )}
+
+      {phase === 'onboarding' && retryAnswers && !sending && (
+        <div className="mt-3 flex justify-center">
+          <button
+            type="button"
+            onClick={handleRetry}
+            className="rounded-full bg-red-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-red-700"
+          >
+            Tentar de novo
+          </button>
         </div>
       )}
 

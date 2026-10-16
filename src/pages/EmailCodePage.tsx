@@ -11,10 +11,12 @@ import {
 import { useAuth } from '../hooks/useAuth.ts';
 import { useCountdown } from '../hooks/useCountdown.ts';
 import { sendEmailCode, verifyEmailCode } from '../services/flyerApi.ts';
-import { formatApiError } from '../utils/apiError.ts';
+import { formatApiError, getApiErrorInfo } from '../utils/apiError.ts';
 import { sessionNeedsEmailCode } from '../utils/sessionMethods.ts';
 
 const RESEND_WAIT_MS = 60_000;
+/** A conta desta sessão já não existe (#30): só resta entrar outra vez. */
+const SESSION_INVALID = 'session_invalid';
 
 /** Segundo passo do login com senha: o código de 6 dígitos enviado por e-mail. */
 export default function EmailCodePage() {
@@ -30,13 +32,27 @@ export default function EmailCodePage() {
   // O React (StrictMode) corre os efeitos duas vezes em desenvolvimento: um envio só.
   const sentOnce = useRef(false);
 
+  const handleApiError = async (err: unknown) => {
+    if (getApiErrorInfo(err).code === SESSION_INVALID) {
+      await signOut();
+      void navigate('/login', { replace: true });
+      return;
+    }
+    setError(formatApiError(err));
+  };
+  // O envio automático abaixo corre uma vez; lê sempre a versão atual do tratamento.
+  const handleApiErrorRef = useRef(handleApiError);
+  useEffect(() => {
+    handleApiErrorRef.current = handleApiError;
+  });
+
   useEffect(() => {
     if (!needsCode || sentOnce.current) return;
     sentOnce.current = true;
     let cancelled = false;
     setResendAt(new Date(Date.now() + RESEND_WAIT_MS).toISOString());
     sendEmailCode().catch((err: unknown) => {
-      if (!cancelled) setError(formatApiError(err));
+      if (!cancelled) void handleApiErrorRef.current(err);
     });
     return () => {
       cancelled = true;
@@ -64,8 +80,8 @@ export default function EmailCodePage() {
       await verifyEmailCode(code);
       void navigate('/', { replace: true });
     } catch (err) {
-      setError(formatApiError(err));
       setBusy(false);
+      await handleApiError(err);
     }
   };
 
@@ -76,7 +92,7 @@ export default function EmailCodePage() {
       await sendEmailCode();
       setNotice('Enviámos um código novo.');
     } catch (err) {
-      setError(formatApiError(err));
+      await handleApiError(err);
     }
   };
 

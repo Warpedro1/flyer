@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 
 import AppLayout from './components/layout/AppLayout.tsx';
 import ChatPage from './pages/ChatPage.tsx';
@@ -18,6 +18,7 @@ import SignupPage from './pages/SignupPage.tsx';
 import MapPage from './pages/MapPage.tsx';
 import MyEventsPage from './pages/MyEventsPage.tsx';
 import MyTicketPage from './pages/MyTicketPage.tsx';
+import NotFoundPage from './pages/NotFoundPage.tsx';
 import NotificationsPage from './pages/NotificationsPage.tsx';
 import PlansPage from './pages/PlansPage.tsx';
 import ProfilePage from './pages/ProfilePage.tsx';
@@ -49,7 +50,7 @@ export default function App() {
         <Route path="/plans" element={<PlansPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

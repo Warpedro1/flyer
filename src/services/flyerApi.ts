@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 import { apiClient } from '../lib/apiClient.ts';
+import { supabase } from '../lib/supabase.ts';
 import type {
   AttendeeListRead,
   ChatMessageIn,
@@ -295,4 +296,38 @@ export async function getProfileStatus(): Promise<ProfileStatus> {
 /** Completa o cadastro (contas Google, no 1.º acesso). */
 export async function completeProfileIdentity(req: { cpf: string; phone: string }): Promise<void> {
   await apiClient.put('/auth/profile/identity', req);
+}
+
+/** Um erro apanhado pela tela de erro (#33), para `app_errors` (#25). */
+export interface ClientErrorReport {
+  message: string;
+  route: string;
+  code?: string;
+  request_id?: string;
+  stack?: string;
+}
+
+/**
+ * Envia o erro ao backend com a referência que a tela mostra (vai como `X-Request-Id`
+ * e fica no registo). Só com sessão (decisão 2026-10-16); nunca falha.
+ */
+export async function reportClientError(report: ClientErrorReport, reference: string): Promise<void> {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) return;
+    await apiClient.post(
+      '/telemetry/client-error',
+      {
+        ...report,
+        message: report.message.slice(0, 500),
+        route: report.route.slice(0, 200),
+        stack: report.stack?.slice(0, 2000),
+      },
+      { headers: { 'X-Request-Id': reference } },
+    );
+  } catch {
+    // Sem rede ou sem permissão: o erro fica na consola.
+  }
 }

@@ -174,10 +174,10 @@ export interface FollowRead {
   created_at: string | null;
 }
 
+/** O que uma pessoa vê de outra. Nunca o e-mail (#30); o @usuário vem com a #32. */
 export interface ProfileBrief {
   id: string;
   name: string | null;
-  email: string | null;
 }
 
 export interface FollowAction {

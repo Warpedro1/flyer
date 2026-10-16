@@ -29,7 +29,7 @@ function person(name: string, overrides: Partial<RsvpWithProfile> = {}): RsvpWit
     call_expires_at: null,
     admitted_at: null,
     created_at: null,
-    profile: { id: `user-${name}`, name, email: null },
+    profile: { id: `user-${name}`, name },
     ...overrides,
   };
 }

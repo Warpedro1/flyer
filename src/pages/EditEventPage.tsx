@@ -5,7 +5,8 @@ import { EventForm, type EventFormInitial } from '../components/events/EventForm
 import { BackButton } from '../components/navigation/BackButton.tsx';
 import { getEventById, getEventForEdit, updateEvent } from '../services/flyerApi.ts';
 import type { EventCreate, EventUpdate } from '../types/index.ts';
-import { formatApiError } from '../utils/apiError.ts';
+import { formatApiError, isNotFoundError } from '../utils/apiError.ts';
+import { NotFoundContent } from '../components/errors/NotFound.tsx';
 
 /** Editar uma data de um evento (só o criador; a recorrência não muda). */
 export default function EditEventPage() {
@@ -13,6 +14,7 @@ export default function EditEventPage() {
   const navigate = useNavigate();
   const [initial, setInitial] = useState<EventFormInitial | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -24,7 +26,9 @@ export default function EditEventPage() {
         const place = event.place_id ? await getEventById(event.place_id).catch(() => null) : null;
         if (!cancelled) setInitial({ event, place });
       } catch (err) {
-        if (!cancelled) setError(formatApiError(err));
+        if (cancelled) return;
+        if (isNotFoundError(err)) setNotFound(true);
+        else setError(formatApiError(err));
       }
     })();
     return () => {
@@ -39,6 +43,14 @@ export default function EditEventPage() {
     await updateEvent(id, update);
     void navigate(`/events/${id}`, { replace: true });
   };
+
+  if (notFound) {
+    return (
+      <div className="p-6">
+        <NotFoundContent title="Não encontrámos este evento" message="Pode ter sido apagado, ou o link está errado." />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-2xl px-4 pb-28 pt-6 md:pb-8">

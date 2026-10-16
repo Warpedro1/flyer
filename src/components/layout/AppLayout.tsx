@@ -21,6 +21,7 @@ import { useAppVersionCheck } from '../../hooks/useAppVersionCheck.ts';
 import { useAuth } from '../../hooks/useAuth.ts';
 import { useAccountGate } from '../../hooks/useAccountGate.ts';
 import { isImmersivePath } from '../../utils/immersivePaths.ts';
+import { ErrorBoundary } from '../errors/ErrorBoundary.tsx';
 import { WingHeartLogo } from './WingHeartLogo.tsx';
 
 function SidebarLink({
@@ -271,7 +272,10 @@ export default function AppLayout() {
         )}
 
         <main className="relative min-h-0 flex-1 overflow-y-auto overscroll-y-contain scroll-smooth bg-gray-50/50">
-          <Outlet />
+          {/* Um erro numa página não leva a navegação; mudar de página limpa o erro. */}
+          <ErrorBoundary key={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </main>
 
         {/* A barra fica na coluna, logo abaixo do <main>, e não por cima dele: assim

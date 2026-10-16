@@ -9,7 +9,8 @@ import {
   recallAttendee,
 } from '../services/flyerApi.ts';
 import type { AttendeeListRead, RsvpWithProfile } from '../types/index.ts';
-import { formatApiError } from '../utils/apiError.ts';
+import { formatApiError, isNotFoundError } from '../utils/apiError.ts';
+import { NotFoundContent } from '../components/errors/NotFound.tsx';
 import { BackButton } from '../components/navigation/BackButton.tsx';
 
 /**
@@ -79,6 +80,7 @@ export default function EventAttendeesPage() {
   const [data, setData] = useState<AttendeeListRead | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -88,7 +90,8 @@ export default function EventAttendeesPage() {
       setData(next);
       setError(null);
     } catch (err) {
-      setError(formatApiError(err));
+      if (isNotFoundError(err)) setNotFound(true);
+      else setError(formatApiError(err));
     } finally {
       setLoading(false);
     }
@@ -137,6 +140,14 @@ export default function EventAttendeesPage() {
   }
 
   const queueEmpty = !data || data.waitlist.length === 0;
+
+  if (notFound) {
+    return (
+      <div className="p-6">
+        <NotFoundContent title="Não encontrámos este evento" message="Pode ter sido apagado, ou o link está errado." />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
