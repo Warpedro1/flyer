@@ -6,6 +6,7 @@ import { scanTicket } from '../services/flyerApi.ts';
 import type { ScanResult } from '../types/index.ts';
 import { formatApiError } from '../utils/apiError.ts';
 import { BackButton } from '../components/navigation/BackButton.tsx';
+import { isChunkLoadError, reloadOnce } from '../utils/chunkReload.ts';
 
 /** Volta ao modo de leitura sozinho, para dar para ler uma fila seguida. */
 const RESET_MS = 3000;
@@ -129,7 +130,9 @@ export default function ScanTicketPage() {
           const value = decoded?.getText();
           if (value) void submit(value);
         });
-      } catch {
+      } catch (err) {
+        // Uma aba de antes do último deploy pede um ficheiro que já não existe (#33).
+        if (isChunkLoadError(err) && reloadOnce()) return;
         setCameraError('Não foi possível ler códigos neste dispositivo.');
       }
     })();

@@ -17,7 +17,8 @@ import {
   openCheckin,
 } from '../services/flyerApi.ts';
 import type { EventRead, TrophyRead } from '../types/index.ts';
-import { formatApiError } from '../utils/apiError.ts';
+import { formatApiError, isNotFoundError } from '../utils/apiError.ts';
+import { NotFoundContent } from '../components/errors/NotFound.tsx';
 import { categoryLabel } from '../utils/categories.ts';
 import { checkinAllowed, checkinStatusText } from '../utils/checkinLabel.ts';
 import { formatRecifeTime } from '../utils/recifeTime.ts';
@@ -47,6 +48,7 @@ export default function EventDetailsPage() {
 
   const [event, setEvent] = useState<EventRead | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
   const [checkError, setCheckError] = useState<string | null>(null);
@@ -89,11 +91,14 @@ export default function EventDetailsPage() {
     (async () => {
       setLoading(true);
       setError(null);
+      setNotFound(false);
       try {
         const data = await getEventById(id);
         if (!cancelled) setEvent(data);
       } catch (err) {
-        if (!cancelled) setError(formatApiError(err));
+        if (cancelled) return;
+        if (isNotFoundError(err)) setNotFound(true);
+        else setError(formatApiError(err));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -207,6 +212,17 @@ export default function EventDetailsPage() {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <div className="p-6">
+        <NotFoundContent
+          title="Não encontrámos este evento"
+          message="Pode ter sido apagado, ou o link está errado."
+        />
       </div>
     );
   }

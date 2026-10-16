@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { EventCapacityRead, EventRead } from '../types/index.ts';
 
+import { apiResponseError } from '../test/axiosErrors.ts';
 import { makeEvent, makePlace } from '../test/factories.ts';
 
 import EventDetailsPage from './EventDetailsPage.tsx';
@@ -470,5 +471,32 @@ describe('EventDetailsPage — janela de check-in', () => {
     await screen.findByText(/check-in aberto/i);
 
     expect(screen.queryByRole('link', { name: /editar evento/i })).toBeNull();
+  });
+});
+
+
+describe('EventDetailsPage — evento que não existe (#33)', () => {
+  beforeEach(() => {
+    getEventById.mockReset();
+    getPlaceEvents.mockReset().mockResolvedValue([]);
+  });
+
+  it('um 404 da API mostra a página "não encontrámos"', async () => {
+    getEventById.mockRejectedValue(apiResponseError(404, { detail: 'Evento não encontrado.' }));
+
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: 'Não encontrámos este evento' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ir para o início' })).toBeInTheDocument();
+  });
+
+  it('outro erro continua a mostrar a mensagem com o código', async () => {
+    getEventById.mockRejectedValue(
+      apiResponseError(500, { detail: 'Erro interno.', code: 'internal_error', request_id: 'abc123def456' }),
+    );
+
+    renderPage();
+
+    expect(await screen.findByText(/código: internal_error · ref abc123def456/)).toBeInTheDocument();
   });
 });
