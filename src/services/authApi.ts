@@ -48,12 +48,25 @@ export async function verifySignupCode(email: string, code: string): Promise<Aut
   return result.ok || result.code !== 'unknown' ? result : { ...result, message: MESSAGES.otp_expired };
 }
 
-/** Envia o link para criar uma senha nova (abre em /reset-password). */
+/**
+ * Envia o código para criar uma senha nova (modelo "Reset Password", só `{{ .Token }}`:
+ * os antivírus de e-mail abrem os links e gastariam um link de uso único, #43). O
+ * `redirectTo` só serve aos links de e-mails enviados antes dessa mudança.
+ */
 export async function sendPasswordReset(email: string): Promise<AuthResult> {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${origin()}/reset-password`,
   });
   return error ? fail(error) : { ok: true };
+}
+
+/** Confere o código da troca de senha e abre uma sessão de recuperação (`amr` recovery). */
+export async function verifyRecoveryCode(email: string, code: string): Promise<AuthResult> {
+  const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'recovery' });
+  if (!error) return { ok: true };
+  const result = fail(error);
+  // O Supabase responde 403 a um código errado ou vencido.
+  return result.ok || result.code !== 'unknown' ? result : { ...result, message: MESSAGES.otp_expired };
 }
 
 export async function updatePassword(password: string): Promise<AuthResult> {
