@@ -33,6 +33,7 @@ export function makeEvent(overrides: Partial<EventRead> = {}): EventRead {
     checkin_opens_at: null,
     checkin_closes_at: null,
     checkin_status: 'open',
+    checkin_method: 'qr',
     ...overrides,
   };
 }
@@ -52,6 +53,7 @@ export function makePlace(overrides: Partial<EventRead> = {}): EventRead {
       { day: 'terça-feira', hours: '11:30 a 22:00' },
     ],
     source_url: 'https://www.google.com/maps/place/parraxaxa',
+    checkin_method: 'gps',
     ...overrides,
   });
 }

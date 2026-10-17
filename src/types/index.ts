@@ -68,6 +68,9 @@ export interface OpeningHours {
 /** Se o check-in é possível agora (backend: services/checkin_window.py). */
 export type CheckinStatus = 'open' | 'not_yet' | 'closed' | 'no_schedule';
 
+/** Decisões 2026-10-17: eventos do app pelo QR na entrada, lugares por GPS, importados só informativos. */
+export type CheckinMethod = 'qr' | 'gps' | 'none';
+
 export interface EventRead {
   id: string;
   kind: EventKind;
@@ -88,6 +91,8 @@ export interface EventRead {
   checkin_opens_at: string | null;
   checkin_closes_at: string | null;
   checkin_status: CheckinStatus | null;
+  /** Como se faz check-in: `qr` na entrada (eventos do app), `gps` (lugares), `none` (importados). */
+  checkin_method: CheckinMethod;
   /** Pydantic `Decimal` serializes as string in JSON. */
   price: string | null;
   /** Pydantic `Decimal` serializes as string in JSON. */
@@ -391,8 +396,36 @@ export interface RsvpQrToken {
   expires_at: string;
 }
 
+/** Onde o celular de quem tem o ingresso está, enviado a cada QR novo. */
+export interface RsvpQrRequest {
+  lat?: number | null;
+  long?: number | null;
+  /** Precisão informada pelo GPS, em metros. */
+  accuracy?: number | null;
+  /** Quando o celular fez a leitura (ISO 8601). */
+  fix_at?: string | null;
+}
+
+/** A entrada aceita, que já é o check-in (decisões 2026-10-17). */
 export interface ScanResult {
   ok: boolean;
   status: RsvpStatus;
   attendee: ProfileBrief;
+  /** O troféu do evento; null quando não deu para entregar (a entrada vale). */
+  trophy: TrophyRead | null;
+  /** false quando o organizador confirmou sem localização ou o evento não tem coordenadas. */
+  location_checked: boolean;
+}
+
+/** GET /realtime/config: chave pública do Pusher; desligado = consultar de tempos em tempos. */
+export interface RealtimeConfig {
+  enabled: boolean;
+  key: string | null;
+  cluster: string | null;
+}
+
+/** Evento `checkin:done` no canal da pessoa. */
+export interface CheckinDoneNotice {
+  event_id: string;
+  trophy: TrophyRead | null;
 }

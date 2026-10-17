@@ -22,6 +22,8 @@ import type {
   PendingFollowOut,
   PlanRead,
   ProfileBrief,
+  RealtimeConfig,
+  RsvpQrRequest,
   RsvpQrToken,
   RsvpRead,
   ScanResult,
@@ -190,9 +192,14 @@ export async function getMyRsvp(eventId: string): Promise<RsvpRead | null> {
   }
 }
 
-export async function getRsvpQrToken(eventId: string): Promise<RsvpQrToken> {
-  const { data } = await apiClient.get<RsvpQrToken>(
+/** A posição vai no corpo, e não na URL, para não ficar nos logs. */
+export async function getRsvpQrToken(
+  eventId: string,
+  position: RsvpQrRequest = {},
+): Promise<RsvpQrToken> {
+  const { data } = await apiClient.post<RsvpQrToken>(
     `/events/${encodeURIComponent(eventId)}/rsvp/qr`,
+    position,
   );
   return data;
 }
@@ -223,11 +230,33 @@ export async function recallAttendee(
   return data;
 }
 
-export async function scanTicket(eventId: string, token: string): Promise<ScanResult> {
+export async function scanTicket(
+  eventId: string,
+  token: string,
+  options: { confirmWithoutLocation?: boolean } = {},
+): Promise<ScanResult> {
   const { data } = await apiClient.post<ScanResult>(
     `/events/${encodeURIComponent(eventId)}/attendance/scan`,
-    { token },
+    options.confirmWithoutLocation ? { token, confirm_without_location: true } : { token },
   );
+  return data;
+}
+
+// --- Tempo real (Pusher) ---
+
+export async function getRealtimeConfig(): Promise<RealtimeConfig> {
+  const { data } = await apiClient.get<RealtimeConfig>('/realtime/config');
+  return data;
+}
+
+export async function realtimeAuth(
+  socketId: string,
+  channelName: string,
+): Promise<{ auth: string }> {
+  const { data } = await apiClient.post<{ auth: string }>('/realtime/auth', {
+    socket_id: socketId,
+    channel_name: channelName,
+  });
   return data;
 }
 

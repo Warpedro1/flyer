@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { makeEvent } from '../test/factories.ts';
+import { makeEvent, makePlace } from '../test/factories.ts';
 
 import CheckInPage from './CheckInPage.tsx';
 
@@ -28,7 +28,7 @@ vi.mock('../hooks/useEffectiveGeo.ts', () => ({
 
 describe('CheckInPage', () => {
   beforeEach(() => {
-    discoverEvents.mockReset().mockResolvedValue([makeEvent({ id: 'evt-1', title: 'Noite de frevo' })]);
+    discoverEvents.mockReset().mockResolvedValue([makePlace({ id: 'evt-1', title: 'Parque da Jaqueira' })]);
     checkIn.mockReset();
   });
 
@@ -64,14 +64,9 @@ describe('CheckInPage — janela de check-in', () => {
     checkIn.mockReset();
   });
 
-  it('um evento que ainda não abriu não deixa fazer check-in e diz quando abre', async () => {
+  it('um lugar fechado agora não deixa fazer check-in', async () => {
     discoverEvents.mockReset().mockResolvedValue([
-      makeEvent({
-        id: 'evt-2',
-        title: 'Frevo amanhã',
-        checkin_status: 'not_yet',
-        checkin_opens_at: '2026-10-16T23:00:00+00:00',
-      }),
+      makePlace({ id: 'evt-2', title: 'Parraxaxá', checkin_status: 'closed' }),
     ]);
 
     render(
@@ -80,7 +75,43 @@ describe('CheckInPage — janela de check-in', () => {
       </MemoryRouter>,
     );
 
-    const button = await screen.findByRole('button', { name: /abre às 20:00 de 16\/10/i });
+    const button = await screen.findByRole('button', { name: /lugar fechado agora/i });
     expect(button).toBeDisabled();
+  });
+});
+
+describe('CheckInPage — como cada evento faz check-in (2026-10-17)', () => {
+  beforeEach(() => {
+    checkIn.mockReset();
+  });
+
+  it('um evento do app leva ao ingresso, sem check-in por GPS', async () => {
+    discoverEvents.mockReset().mockResolvedValue([makeEvent({ id: 'evt-3', title: 'Noite de frevo' })]);
+
+    render(
+      <MemoryRouter>
+        <CheckInPage />
+      </MemoryRouter>,
+    );
+
+    const link = await screen.findByRole('link', { name: /mostrar ingresso na entrada/i });
+    expect(link).toHaveAttribute('href', '/events/evt-3');
+    expect(screen.queryByRole('button', { name: /fazer check-in/i })).not.toBeInTheDocument();
+  });
+
+  it('um evento importado não aparece: é só informativo', async () => {
+    discoverEvents.mockReset().mockResolvedValue([
+      makeEvent({ id: 'evt-4', title: 'Show da Sympla', checkin_method: 'none' }),
+      makePlace({ id: 'evt-5', title: 'Parque da Jaqueira' }),
+    ]);
+
+    render(
+      <MemoryRouter>
+        <CheckInPage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Parque da Jaqueira')).toBeInTheDocument();
+    expect(screen.queryByText('Show da Sympla')).not.toBeInTheDocument();
   });
 });

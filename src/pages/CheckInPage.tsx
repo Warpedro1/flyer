@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import EventMap from '../components/map/EventMap.tsx';
 import { EventFeedCard } from '../components/ui/EventFeedCard.tsx';
@@ -52,7 +53,8 @@ export default function CheckInPage() {
           page: 1,
           page_size: 50,
         });
-        if (!cancelled) setEvents(data);
+        // Eventos importados são só informativos: não têm check-in (2026-10-17).
+        if (!cancelled) setEvents(data.filter((e) => e.checkin_method !== 'none'));
       } catch (err) {
         if (!cancelled) setListError(formatApiError(err));
       } finally {
@@ -185,15 +187,25 @@ export default function CheckInPage() {
               key={event.id}
               event={event}
               footer={
-                <button
-                  type="button"
-                  className="w-full rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
-                  disabled={checkingId !== null || !canCheckInPhysically || !checkinAllowed(event)}
-                  title={!canCheckInPhysically ? 'Ative o GPS para fazer check-in' : undefined}
-                  onClick={() => void handleCheckIn(event.id)}
-                >
-                  {checkingId === event.id ? 'Confirmando…' : checkinButtonText(event)}
-                </button>
+                // Nos eventos do app, o check-in é a leitura do ingresso na entrada.
+                event.checkin_method === 'qr' ? (
+                  <Link
+                    to={`/events/${event.id}`}
+                    className="block w-full rounded-xl border border-red-200 py-2.5 text-center text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                  >
+                    Mostrar ingresso na entrada
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    className="w-full rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+                    disabled={checkingId !== null || !canCheckInPhysically || !checkinAllowed(event)}
+                    title={!canCheckInPhysically ? 'Ative o GPS para fazer check-in' : undefined}
+                    onClick={() => void handleCheckIn(event.id)}
+                  >
+                    {checkingId === event.id ? 'Confirmando…' : checkinButtonText(event)}
+                  </button>
+                )
               }
             />
           ))}
