@@ -27,7 +27,7 @@ function renderPage() {
     <MemoryRouter initialEntries={['/signup/code']}>
       <Routes>
         <Route path="/signup/code" element={<SignupCodePage />} />
-        <Route path="/signup" element={<p>Ecrã de cadastro</p>} />
+        <Route path="/signup" element={<p>Tela de cadastro</p>} />
         <Route path="/" element={<p>Início</p>} />
       </Routes>
     </MemoryRouter>,
@@ -142,7 +142,7 @@ describe('SignupCodePage', () => {
 
     await user.click(screen.getByRole('button', { name: /corrigir e-mail/i }));
 
-    expect(await screen.findByText('Ecrã de cadastro')).toBeInTheDocument();
+    expect(await screen.findByText('Tela de cadastro')).toBeInTheDocument();
     expect(readSignupTicket()).toBeNull();
   });
 
@@ -151,7 +151,7 @@ describe('SignupCodePage', () => {
 
     renderPage();
 
-    expect(screen.getByText(/navegador onde fizeste o cadastro/i)).toBeInTheDocument();
+    expect(screen.getByText(/navegador em que você fez o cadastro/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/código/i)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /fazer o cadastro outra vez/i })).toHaveAttribute('href', '/signup');
   });

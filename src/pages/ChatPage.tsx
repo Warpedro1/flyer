@@ -26,7 +26,7 @@ import { clearOnboardingDraft, readOnboardingDraft, saveOnboardingDraft } from '
 const ONBOARDING_USER_REJECTED_MSG =
   'Não consegui te ajudar com isso. Por favor, tente novamente.';
 const ONBOARDING_SERVER_FAIL_MSG =
-  'Estamos com um problema do nosso lado. Tenta de novo daqui a pouco.';
+  'Estamos com um problema do nosso lado. Tente de novo em instantes.';
 
 type ChatLine = {
   id: string;
@@ -331,7 +331,7 @@ export default function ChatPage() {
         )}
         {!loadingHistory && lines.length === 0 && phase === 'chat' && (
           <p className="text-sm text-gray-500">
-            Escreva uma mensagem pra começar. Ex.: &quot;Sugere shows de jazz perto de
+            Escreva uma mensagem pra começar. Ex.: &quot;Sugira shows de jazz perto de
             mim.&quot;
           </p>
         )}

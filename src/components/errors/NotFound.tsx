@@ -10,8 +10,8 @@ export interface NotFoundContentProps {
 
 /** O conteúdo do 404 (#33): numa rota que não existe, ou quando a API diz 404. */
 export function NotFoundContent({
-  title = 'Não encontrámos esta página',
-  message = 'O endereço pode estar errado, ou o que procuras já não existe.',
+  title = 'Não encontramos esta página',
+  message = 'O endereço pode estar errado, ou o que você procura não existe mais.',
 }: NotFoundContentProps) {
   return (
     <div className="mx-auto w-full max-w-md rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-sm">

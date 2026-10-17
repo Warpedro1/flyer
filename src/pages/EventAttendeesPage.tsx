@@ -144,7 +144,7 @@ export default function EventAttendeesPage() {
   if (notFound) {
     return (
       <div className="p-6">
-        <NotFoundContent title="Não encontrámos este evento" message="Pode ter sido apagado, ou o link está errado." />
+        <NotFoundContent title="Não encontramos este evento" message="Pode ter sido apagado, ou o link está errado." />
       </div>
     );
   }

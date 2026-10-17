@@ -7,7 +7,7 @@ import { formatApiError, getApiErrorInfo, isNotFoundError } from './apiError.ts'
 describe('getApiErrorInfo', () => {
   it('lê a mensagem, o código e a referência do corpo', () => {
     const err = apiResponseError(401, {
-      detail: 'Sessão inválida: entra outra vez.',
+      detail: 'Sessão inválida: entre novamente.',
       code: 'session_invalid',
       request_id: 'abc123def456',
     });
@@ -16,7 +16,7 @@ describe('getApiErrorInfo', () => {
       status: 401,
       code: 'session_invalid',
       requestId: 'abc123def456',
-      message: 'Sessão inválida: entra outra vez.',
+      message: 'Sessão inválida: entre novamente.',
     });
   });
 
@@ -43,13 +43,13 @@ describe('formatApiError', () => {
 
   it('um erro nosso (5xx) diz o código e a referência', () => {
     const err = apiResponseError(500, {
-      detail: 'Erro interno. Tenta de novo daqui a pouco.',
+      detail: 'Erro interno. Tente de novo em instantes.',
       code: 'internal_error',
       request_id: 'abc123def456',
     });
 
     expect(formatApiError(err)).toBe(
-      'Erro interno. Tenta de novo daqui a pouco. (código: internal_error · ref abc123def456)',
+      'Erro interno. Tente de novo em instantes. (código: internal_error · ref abc123def456)',
     );
   });
 
@@ -57,7 +57,7 @@ describe('formatApiError', () => {
     const err = apiResponseError(503, { detail: { code: 'moderation_unavailable' } }, { 'x-request-id': 'r1234567' });
 
     expect(formatApiError(err)).toBe(
-      'Estamos com um problema do nosso lado. Tenta de novo daqui a pouco. (código: moderation_unavailable · ref r1234567)',
+      'Estamos com um problema do nosso lado. Tente de novo em instantes. (código: moderation_unavailable · ref r1234567)',
     );
   });
 
@@ -71,12 +71,12 @@ describe('formatApiError', () => {
 
   it('demasiados pedidos sem detail dá uma frase em português', () => {
     expect(formatApiError(apiResponseError(429, { error: 'Rate limit exceeded: 3 per 10 minute' }))).toBe(
-      'Muitos pedidos seguidos. Espera um pouco e tenta de novo.',
+      'Muitas tentativas seguidas. Aguarde um pouco e tente de novo.',
     );
   });
 
   it('sem resposta é falta de ligação', () => {
-    expect(formatApiError(networkError())).toBe('Sem ligação ao servidor. Verifica a internet e tenta de novo.');
+    expect(formatApiError(networkError())).toBe('Sem conexão com o servidor. Verifique a internet e tente de novo.');
   });
 
   it('um erro que não é do axios mostra a sua mensagem', () => {

@@ -144,7 +144,7 @@ describe('EventDetailsPage — lotação e lista de espera', () => {
 
     renderPage();
 
-    expect(await screen.findByText(/és o 3.º da lista/i)).toBeInTheDocument();
+    expect(await screen.findByText(/você é o 3º da lista/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sair da lista/i })).toBeInTheDocument();
   });
 
@@ -153,7 +153,7 @@ describe('EventDetailsPage — lotação e lista de espera', () => {
 
     renderPage();
 
-    expect(await screen.findByText(/é a tua vez/i)).toBeInTheDocument();
+    expect(await screen.findByText(/é a sua vez/i)).toBeInTheDocument();
   });
 
   it('leva quem tem vaga ao bilhete', async () => {
@@ -161,7 +161,7 @@ describe('EventDetailsPage — lotação e lista de espera', () => {
 
     renderPage();
 
-    const link = await screen.findByRole('link', { name: /ver o meu bilhete/i });
+    const link = await screen.findByRole('link', { name: /ver meu ingresso/i });
     expect(link).toHaveAttribute('href', '/events/evt-1/ticket');
   });
 
@@ -172,7 +172,7 @@ describe('EventDetailsPage — lotação e lista de espera', () => {
 
     renderPage();
 
-    const link = await screen.findByRole('link', { name: /ver o meu bilhete/i });
+    const link = await screen.findByRole('link', { name: /ver meu ingresso/i });
     expect(link).toHaveClass('block', 'w-full');
   });
 
@@ -181,7 +181,7 @@ describe('EventDetailsPage — lotação e lista de espera', () => {
 
     renderPage();
 
-    expect(await screen.findByText(/a tua chamada expirou/i)).toBeInTheDocument();
+    expect(await screen.findByText(/sua chamada expirou/i)).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /entrar na lista de espera/i }),
     ).toBeInTheDocument();
@@ -194,7 +194,7 @@ describe('EventDetailsPage — lotação e lista de espera', () => {
 
     renderPage();
 
-    const link = await screen.findByRole('link', { name: /gerir participantes/i });
+    const link = await screen.findByRole('link', { name: /gerenciar participantes/i });
     expect(link).toHaveAttribute('href', '/events/evt-1/attendees');
   });
 
@@ -204,7 +204,7 @@ describe('EventDetailsPage — lotação e lista de espera', () => {
     renderPage();
 
     await screen.findByRole('button', { name: /^vou$/i });
-    expect(screen.queryByRole('link', { name: /gerir participantes/i })).toBeNull();
+    expect(screen.queryByRole('link', { name: /gerenciar participantes/i })).toBeNull();
   });
 
   it('confirma presença e recarrega o estado do evento', async () => {
@@ -219,7 +219,7 @@ describe('EventDetailsPage — lotação e lista de espera', () => {
     await user.click(await screen.findByRole('button', { name: /^vou$/i }));
 
     await waitFor(() => expect(joinEvent).toHaveBeenCalledWith('evt-1'));
-    expect(await screen.findByRole('link', { name: /ver o meu bilhete/i })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /ver meu ingresso/i })).toBeInTheDocument();
   });
 
   it('mostra o erro quando o evento esgota entre o ecrã e o clique', async () => {
@@ -486,7 +486,7 @@ describe('EventDetailsPage — evento que não existe (#33)', () => {
 
     renderPage();
 
-    expect(await screen.findByRole('heading', { name: 'Não encontrámos este evento' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Não encontramos este evento' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ir para o início' })).toBeInTheDocument();
   });
 

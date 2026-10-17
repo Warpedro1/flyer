@@ -117,21 +117,21 @@ export default function MyTicketPage() {
 
       {!rsvp && !error && (
         <p className="rounded-2xl border border-gray-200 bg-white p-6 text-center text-gray-600">
-          Não estás inscrito neste evento.
+          Você não está inscrito neste evento.
         </p>
       )}
 
       {rsvp?.status === 'admitted' && (
         <div className="rounded-3xl border border-green-200 bg-green-50 p-8 text-center">
           <CheckCircle2 className="mx-auto h-16 w-16 text-green-600" />
-          <p className="mt-4 text-xl font-bold text-green-900">Já entraste</p>
+          <p className="mt-4 text-xl font-bold text-green-900">Você já entrou</p>
           <p className="mt-1 text-sm text-green-800">Bom evento!</p>
         </div>
       )}
 
       {rsvp?.status === 'cancelled' && (
         <p className="rounded-2xl border border-gray-200 bg-white p-6 text-center text-gray-600">
-          Cancelaste a tua inscrição neste evento.
+          Você cancelou sua inscrição neste evento.
         </p>
       )}
 
@@ -139,15 +139,15 @@ export default function MyTicketPage() {
         <div className="space-y-4">
           {rsvp.status === 'called' && (
             <div className="rounded-3xl border border-red-200 bg-red-50 p-5 text-center">
-              <p className="text-lg font-bold text-red-700">É a tua vez!</p>
+              <p className="text-lg font-bold text-red-700">É a sua vez!</p>
               <p className="mt-1 flex items-center justify-center gap-2 text-sm text-red-800">
                 <Clock className="h-4 w-4" />
-                Mostra este código dentro de{' '}
+                Mostre este código em até{' '}
                 <span className="font-mono font-bold">{countdown.label}</span>
               </p>
               {countdown.expired && (
                 <p className="mt-2 text-sm text-red-800">
-                  O prazo acabou. Fala com quem organiza para te chamar outra vez.
+                  O prazo acabou. Fale com a organização para chamarem você de novo.
                 </p>
               )}
             </div>
@@ -164,20 +164,20 @@ export default function MyTicketPage() {
               <p className="flex items-center justify-center gap-2 font-medium">
                 <Users className="h-4 w-4" />
                 {rsvp.ahead_count === 1
-                  ? '1 pessoa à tua frente'
-                  : `${rsvp.ahead_count ?? 0} pessoas à tua frente`}
+                  ? '1 pessoa na sua frente'
+                  : `${rsvp.ahead_count ?? 0} pessoas na sua frente`}
               </p>
               <p className="mt-1 text-sm">
-                Guarda este ecrã — avisamos-te quando for a tua vez.
+                Deixe esta tela aberta: avisamos quando for a sua vez.
               </p>
             </div>
           )}
 
           {rsvp.status === 'no_show' && (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-center text-amber-900">
-              <p className="font-medium">A tua chamada expirou</p>
+              <p className="font-medium">Sua chamada expirou</p>
               <p className="mt-1 text-sm">
-                Pede a quem organiza para te chamar de novo.
+                Peça à organização para chamar você de novo.
               </p>
             </div>
           )}

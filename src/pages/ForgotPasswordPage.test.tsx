@@ -50,13 +50,13 @@ describe('ForgotPasswordPage', () => {
     sendPasswordReset.mockResolvedValue({
       ok: false,
       code: 'over_email_send_rate_limit',
-      message: 'Muitos pedidos seguidos. Espera um minuto e tenta outra vez.',
+      message: 'Muitas tentativas seguidas. Aguarde um minuto e tente de novo.',
     });
     renderPage();
 
     await user.type(screen.getByLabelText(/^e-mail/i), 'ana@example.com');
     await user.click(screen.getByRole('button', { name: /enviar link/i }));
 
-    expect(await screen.findByText(/espera um minuto/i)).toBeInTheDocument();
+    expect(await screen.findByText(/aguarde um minuto/i)).toBeInTheDocument();
   });
 });

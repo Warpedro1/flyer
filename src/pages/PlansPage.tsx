@@ -45,7 +45,7 @@ export default function PlansPage() {
         <div className="mb-10 text-center">
           <h1 className="text-3xl font-bold text-gray-900">Planos Flyer</h1>
           <p className="mt-2 text-gray-500">
-            Escolhe o plano ideal para ti e desbloqueia funcionalidades premium.
+            Escolha o plano ideal para você e desbloqueie recursos premium.
           </p>
         </div>
 
@@ -62,7 +62,7 @@ export default function PlansPage() {
         )}
 
         {!loading && !error && plans.length === 0 && (
-          <p className="text-center text-gray-500">Nenhum plano disponível de momento.</p>
+          <p className="text-center text-gray-500">Nenhum plano disponível no momento.</p>
         )}
 
         <div className="grid gap-6 md:grid-cols-3">
@@ -131,7 +131,7 @@ export default function PlansPage() {
                           : 'bg-red-600 text-white'
                     } opacity-80`}
                   >
-                    {isFree ? 'Plano actual' : 'Subscrever'}
+                    {isFree ? 'Plano atual' : 'Assinar'}
                   </button>
                 </div>
               </div>

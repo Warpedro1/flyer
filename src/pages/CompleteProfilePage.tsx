@@ -25,7 +25,7 @@ export default function CompleteProfilePage() {
 
   if (loading) {
     return (
-      <AuthShell title="Completa o teu cadastro">
+      <AuthShell title="Complete seu cadastro">
         <div className="flex justify-center py-6">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
         </div>
@@ -57,8 +57,8 @@ export default function CompleteProfilePage() {
 
   return (
     <AuthShell
-      title="Completa o teu cadastro"
-      subtitle="Para usar o Flyer precisamos do teu CPF e do teu celular. Só tu vês estes dados."
+      title="Complete seu cadastro"
+      subtitle="Para usar o Flyer, precisamos do seu CPF e do seu celular. Só você vê esses dados."
     >
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
         {error && <AuthMessage tone="error">{error}</AuthMessage>}
@@ -104,7 +104,7 @@ export default function CompleteProfilePage() {
           </AuthMessage>
         )}
         <button type="submit" disabled={busy} className={authPrimaryButton}>
-          {busy ? 'A guardar…' : 'Continuar'}
+          {busy ? 'Salvando…' : 'Continuar'}
         </button>
       </form>
       <button

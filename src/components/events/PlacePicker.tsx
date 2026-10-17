@@ -79,7 +79,7 @@ export function PlacePicker({ near, selected, onSelect }: PlacePickerProps) {
           void ensureLoaded();
         }}
       />
-      {loading && <p className="mt-2 text-sm text-gray-500">A procurar lugares…</p>}
+      {loading && <p className="mt-2 text-sm text-gray-500">Buscando lugares…</p>}
       {matches.length > 0 && (
         <ul className="mt-2 space-y-1">
           {matches.map((p) => (

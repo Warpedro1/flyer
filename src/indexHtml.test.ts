@@ -16,8 +16,8 @@ describe('index.html', () => {
     expect(indexHtml.toLowerCase()).not.toContain('bootstrap');
   });
 
-  it('declara a língua da app como português', () => {
-    expect(indexHtml).toMatch(/<html[^>]*\blang="pt"/);
+  it('declara a língua do app como português do Brasil', () => {
+    expect(indexHtml).toMatch(/<html[^>]*\blang="pt-BR"/);
   });
 
   it('deixa a app ocupar o ecrã todo no iPhone, para a barra de baixo respeitar a zona segura', () => {

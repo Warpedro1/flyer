@@ -6,8 +6,10 @@ import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 import type { EventRead } from '../../types/index.ts';
+import { FALLBACK_GEO } from '../../utils/constants.ts';
 
-const DEFAULT_CENTER: [number, number] = [38.7223, -9.1393];
+// Sem posição nem eventos, o mapa abre no Recife (era Lisboa).
+const DEFAULT_CENTER: [number, number] = [FALLBACK_GEO.latitude, FALLBACK_GEO.longitude];
 
 function fixLeafletDefaultIcons() {
   const proto = L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown };
@@ -96,7 +98,7 @@ export default function EventMap({
               fillOpacity: 0.35,
             }}
           >
-            <Popup>A tua posição</Popup>
+            <Popup>Sua posição</Popup>
           </CircleMarker>
         )}
         {events.map((ev) => (

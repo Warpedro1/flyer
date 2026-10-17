@@ -39,7 +39,7 @@ describe('ScanTicketPage', () => {
 
     renderPage();
 
-    await user.type(screen.getByLabelText(/código do bilhete/i), 'tok-1');
+    await user.type(screen.getByLabelText(/código do ingresso/i), 'tok-1');
     await user.click(screen.getByRole('button', { name: /validar/i }));
 
     await waitFor(() => expect(scanTicket).toHaveBeenCalledWith('evt-1', 'tok-1'));
@@ -49,11 +49,11 @@ describe('ScanTicketPage', () => {
 
   it('mostra a razão que vem do backend quando o QR é recusado', async () => {
     const user = userEvent.setup();
-    scanTicket.mockRejectedValue(new Error('QR expirado. Pede um novo ao participante.'));
+    scanTicket.mockRejectedValue(new Error('QR expirado. Peça um novo ao participante.'));
 
     renderPage();
 
-    await user.type(screen.getByLabelText(/código do bilhete/i), 'tok-velho');
+    await user.type(screen.getByLabelText(/código do ingresso/i), 'tok-velho');
     await user.click(screen.getByRole('button', { name: /validar/i }));
 
     expect(await screen.findByText(/qr expirado/i)).toBeInTheDocument();
@@ -74,9 +74,9 @@ describe('ScanTicketPage', () => {
 
     // jsdom não expõe mediaDevices: a leitura manual tem de continuar a servir.
     expect(
-      await screen.findByText(/não foi possível abrir a câmara/i),
+      await screen.findByText(/não foi possível abrir a câmera/i),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText(/código do bilhete/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/código do ingresso/i)).toBeInTheDocument();
   });
 
   it('desliga a câmara ao sair do ecrã', async () => {

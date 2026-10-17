@@ -103,7 +103,7 @@ describe('EditEventPage', () => {
     await user.clear(title);
     await user.type(title, 'Aula de frevo avançada');
     fireEvent.change(screen.getByLabelText(/fim do evento/i), { target: { value: '2026-10-16T23:30' } });
-    await user.click(screen.getByRole('button', { name: /guardar alterações/i }));
+    await user.click(screen.getByRole('button', { name: /salvar alterações/i }));
 
     await waitFor(() => expect(updateEvent).toHaveBeenCalledTimes(1));
     const [eventId, payload] = updateEvent.mock.calls[0];

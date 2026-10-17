@@ -8,19 +8,19 @@ export type AuthResult = { ok: true } | { ok: false; code: string; message: stri
 const MESSAGES: Record<string, string> = {
   // Igual para e-mail inexistente e senha errada: não se revela quem tem conta.
   invalid_credentials: 'E-mail ou senha incorretos.',
-  email_not_confirmed: 'O cadastro deste e-mail não foi concluído: falta o código que te enviámos.',
+  email_not_confirmed: 'O cadastro deste e-mail não foi concluído: falta o código que enviamos para você.',
   otp_expired: 'Código inválido ou expirado.',
-  weak_password: 'Esta senha é fraca ou já apareceu numa fuga de dados. Escolhe outra.',
-  same_password: 'A senha nova tem de ser diferente da anterior.',
-  over_email_send_rate_limit: 'Muitos pedidos seguidos. Espera um minuto e tenta outra vez.',
-  over_request_rate_limit: 'Muitos pedidos seguidos. Espera um minuto e tenta outra vez.',
+  weak_password: 'Esta senha é fraca ou já apareceu em um vazamento de dados. Escolha outra.',
+  same_password: 'A senha nova precisa ser diferente da anterior.',
+  over_email_send_rate_limit: 'Muitas tentativas seguidas. Aguarde um minuto e tente de novo.',
+  over_request_rate_limit: 'Muitas tentativas seguidas. Aguarde um minuto e tente de novo.',
   email_address_invalid: 'Este e-mail não é válido.',
-  signup_disabled: 'O cadastro com e-mail está desligado de momento.',
+  signup_disabled: 'O cadastro com e-mail está desativado no momento.',
 };
 
 function fail(error: AuthError): AuthResult {
   const code = error.code ?? (error.status === 429 ? 'over_request_rate_limit' : 'unknown');
-  return { ok: false, code, message: MESSAGES[code] ?? 'Não foi possível concluir. Tenta outra vez.' };
+  return { ok: false, code, message: MESSAGES[code] ?? 'Não foi possível concluir. Tente de novo.' };
 }
 
 const origin = () => window.location.origin;

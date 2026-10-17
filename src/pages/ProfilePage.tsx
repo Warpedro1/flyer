@@ -56,7 +56,7 @@ export default function ProfilePage() {
   const displayName =
     (user?.user_metadata?.full_name as string | undefined) ??
     user?.email ??
-    'Utilizador';
+    'Usuário';
 
   return (
     <div className="mx-auto max-w-3xl p-4 pb-28 sm:p-8 md:pb-8">
@@ -92,7 +92,7 @@ export default function ProfilePage() {
             className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white py-3 font-semibold text-gray-800 shadow-sm transition hover:border-red-200 hover:bg-red-50"
           >
             <CreditCard className="h-5 w-5 text-red-600" />
-            Gerir assinatura
+            Gerenciar assinatura
           </button>
           <button
             type="button"
@@ -130,7 +130,7 @@ export default function ProfilePage() {
 
         {!loading && !error && trophies.length === 0 && (
           <p className="text-center text-gray-500">
-            Ainda não tens troféus. Faz check-in nos eventos para coleccionar.
+            Você ainda não tem troféus. Faça check-in nos eventos para colecionar.
           </p>
         )}
 

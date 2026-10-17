@@ -45,7 +45,7 @@ describe('ErrorBoundary', () => {
   it('um erro numa página mostra a tela de erro em vez de ficar em branco', () => {
     renderBoundary();
 
-    expect(screen.getByRole('heading', { name: 'Algo correu mal' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Algo deu errado' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ir para o início' })).toHaveAttribute('href', '/');
   });
@@ -84,7 +84,7 @@ describe('ErrorBoundary', () => {
     renderBoundary(<OldChunk />);
 
     expect(reloadOnce).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole('heading', { name: 'Algo correu mal' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Algo deu errado' })).not.toBeInTheDocument();
     expect(reportClientError).not.toHaveBeenCalled();
   });
 
@@ -95,7 +95,7 @@ describe('ErrorBoundary', () => {
 
     renderBoundary(<OldChunk />);
 
-    expect(screen.getByRole('heading', { name: 'Algo correu mal' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Algo deu errado' })).toBeInTheDocument();
     expect(reportClientError).toHaveBeenCalledWith(expect.objectContaining({ code: 'chunk_load_error' }), expect.any(String));
   });
 

@@ -90,7 +90,7 @@ export default function EmailCodePage() {
     setResendAt(new Date(Date.now() + RESEND_WAIT_MS).toISOString());
     try {
       await sendEmailCode();
-      setNotice('Enviámos um código novo.');
+      setNotice('Enviamos um código novo.');
     } catch (err) {
       await handleApiError(err);
     }
@@ -104,7 +104,7 @@ export default function EmailCodePage() {
   return (
     <AuthShell
       title="Código de acesso"
-      subtitle={`Enviámos um código de 6 dígitos para ${user.email ?? 'o teu e-mail'}. Ele vale por 10 minutos.`}
+      subtitle={`Enviamos um código de 6 dígitos para ${user.email ?? 'seu e-mail'}. Ele vale por 10 minutos.`}
     >
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
         {error && <AuthMessage tone="error">{error}</AuthMessage>}
@@ -127,7 +127,7 @@ export default function EmailCodePage() {
           />
         </div>
         <button type="submit" disabled={busy || code.length !== 6} className={authPrimaryButton}>
-          {busy ? 'A confirmar…' : 'Confirmar'}
+          {busy ? 'Confirmando…' : 'Confirmar'}
         </button>
       </form>
       <div className="mt-4 flex flex-col gap-2 text-sm">

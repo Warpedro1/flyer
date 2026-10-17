@@ -1,6 +1,6 @@
 export const APP_NAME = 'Flyer';
 export const APP_DESCRIPTION =
-  'Descobre eventos perto de ti, faz check-in e ganha troféus.';
+  'Descubra eventos perto de você, faça check-in e ganhe troféus.';
 
 export const CONTACT_INFO = {
   email: 'contato@flyer.com',

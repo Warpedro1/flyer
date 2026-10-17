@@ -8,9 +8,9 @@ export interface ApiErrorInfo {
   message: string;
 }
 
-export const SERVER_FAIL_MESSAGE = 'Estamos com um problema do nosso lado. Tenta de novo daqui a pouco.';
-const NETWORK_MESSAGE = 'Sem ligação ao servidor. Verifica a internet e tenta de novo.';
-const RATE_LIMIT_MESSAGE = 'Muitos pedidos seguidos. Espera um pouco e tenta de novo.';
+export const SERVER_FAIL_MESSAGE = 'Estamos com um problema do nosso lado. Tente de novo em instantes.';
+const NETWORK_MESSAGE = 'Sem conexão com o servidor. Verifique a internet e tente de novo.';
+const RATE_LIMIT_MESSAGE = 'Muitas tentativas seguidas. Aguarde um pouco e tente de novo.';
 
 function asString(value: unknown): string | null {
   return typeof value === 'string' && value ? value : null;
