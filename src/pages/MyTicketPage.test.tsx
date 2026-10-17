@@ -132,7 +132,9 @@ describe('MyTicketPage', () => {
   });
 
   it('mostra o prazo de quem foi chamado', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
+    // Só o relógio fica parado: os timers correm de verdade, e o prazo não se mexe
+    // numa máquina lenta.
+    vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-09-21T10:00:00Z'));
     getMyRsvp.mockResolvedValue(
       rsvp({ status: 'called', call_expires_at: '2026-09-21T10:02:00Z' }),
@@ -141,8 +143,7 @@ describe('MyTicketPage', () => {
     renderPage();
 
     expect(await screen.findByText(/é a sua vez/i)).toBeInTheDocument();
-    // O relógio anda de verdade (shouldAdvanceTime): numa máquina lenta já pode ser 1:59.
-    expect(screen.getByText(/^(2:00|1:59)$/)).toBeInTheDocument();
+    expect(screen.getByText('2:00')).toBeInTheDocument();
   });
 
   it('não desenha QR a quem já entrou', async () => {

@@ -197,6 +197,34 @@ describe('EventDetailsPage — lotação e lista de espera', () => {
 
     const link = await screen.findByRole('link', { name: /gerenciar participantes/i });
     expect(link).toHaveAttribute('href', '/events/evt-1/attendees');
+    // Fica na barra de baixo, no lugar do "Vou".
+    expect(link.closest('[data-testid="event-actions"]')).not.toBeNull();
+    expect(screen.getAllByRole('link', { name: /gerenciar participantes/i })).toHaveLength(1);
+  });
+
+  it.each(['confirmed', 'waitlisted', null] as const)(
+    'o criador não vê o botão de confirmar presença (my_status %s)',
+    async (myStatus) => {
+      getEventById.mockResolvedValue(
+        event(state({ my_status: myStatus }), { creator_id: 'user-1' }),
+      );
+
+      renderPage();
+
+      await screen.findByRole('link', { name: /gerenciar participantes/i });
+      expect(screen.queryByRole('button', { name: /^vou$/i })).toBeNull();
+      expect(screen.queryByRole('button', { name: /lista de espera/i })).toBeNull();
+      expect(screen.queryByRole('link', { name: /ver meu ingresso/i })).toBeNull();
+      expect(screen.queryByText(/mostre seu ingresso/i)).toBeNull();
+    },
+  );
+
+  it('o criador continua vendo o horário do check-in', async () => {
+    getEventById.mockResolvedValue(event(state(), { creator_id: 'user-1', checkin_status: 'closed' }));
+
+    renderPage();
+
+    expect(await screen.findByTestId('checkin-status')).toHaveTextContent(/check-in fechado/i);
   });
 
   it('não mostra a gestão de participantes a quem não criou o evento', async () => {
