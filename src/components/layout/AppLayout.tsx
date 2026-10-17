@@ -136,7 +136,7 @@ export default function AppLayout() {
         <div
           className="h-10 w-10 animate-spin rounded-full border-2 border-red-600 border-t-transparent"
           role="status"
-          aria-label="A carregar"
+          aria-label="Carregando"
         />
       </div>
     );

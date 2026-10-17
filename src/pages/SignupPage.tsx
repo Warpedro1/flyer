@@ -55,7 +55,7 @@ export default function SignupPage() {
   };
 
   return (
-    <AuthShell title="Criar conta" subtitle="Vamos enviar um código de 6 dígitos para confirmares o teu e-mail.">
+    <AuthShell title="Criar conta" subtitle="Vamos enviar um código de 6 dígitos para você confirmar seu e-mail.">
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4" noValidate={false}>
         {error && (
           <AuthMessage tone="error">
@@ -125,7 +125,7 @@ export default function SignupPage() {
             value={phone}
             onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
           />
-          <p className="mt-1 text-xs text-gray-500">O CPF e o celular só tu vês. Cada um só pode ter uma conta.</p>
+          <p className="mt-1 text-xs text-gray-500">Só você vê o CPF e o celular. Cada um só pode ter uma conta.</p>
         </div>
         <div>
           <label htmlFor="password" className={authLabel}>
@@ -166,7 +166,7 @@ export default function SignupPage() {
           </AuthMessage>
         )}
         <button type="submit" disabled={busy} className={authPrimaryButton}>
-          {busy ? 'A criar…' : 'Criar conta'}
+          {busy ? 'Criando…' : 'Criar conta'}
         </button>
         <p className="text-center text-sm text-gray-600">
           <Link to="/login" className={authLink}>

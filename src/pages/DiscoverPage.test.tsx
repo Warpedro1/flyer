@@ -124,7 +124,7 @@ describe('DiscoverPage', () => {
     renderPage();
 
     expect(await screen.findByText('Concerto no Tejo')).toBeInTheDocument();
-    expect(screen.getByText(/perto de ti, por data/i)).toBeInTheDocument();
+    expect(screen.getByText(/perto de você, por data/i)).toBeInTheDocument();
   });
 
   it('o aviso leva ao Chat para fazer o onboarding', async () => {

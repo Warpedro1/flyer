@@ -122,7 +122,7 @@ export default function MapPage() {
         )}
 
         {loading && (
-          <p className="mt-4 text-center text-sm text-gray-500">A actualizar marcadores...</p>
+          <p className="mt-4 text-center text-sm text-gray-500">Atualizando marcadores...</p>
         )}
       </div>
     </div>

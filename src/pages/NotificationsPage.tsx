@@ -8,7 +8,7 @@ export default function NotificationsPage() {
       </div>
       <h1 className="mt-6 text-xl font-bold text-gray-900">Notificações</h1>
       <p className="mt-2 max-w-sm text-gray-500">
-        Ainda não tens alertas. Quando houver novidades sobre eventos e amigos, aparecem aqui.
+        Você ainda não tem alertas. Quando houver novidades sobre eventos e amigos, elas aparecem aqui.
       </p>
     </div>
   );

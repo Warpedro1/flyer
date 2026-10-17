@@ -104,7 +104,7 @@ describe('AppLayout — código do login por e-mail', () => {
           <Route element={<AppLayout />}>
             <Route path="/" element={<p>Início</p>} />
           </Route>
-          <Route path="/login/code" element={<p>Ecrã do código</p>} />
+          <Route path="/login/code" element={<p>Tela do código</p>} />
           <Route path="/complete-profile" element={<p>Completar cadastro</p>} />
           <Route path="/signup/code" element={<p>Código do cadastro</p>} />
         </Routes>
@@ -124,7 +124,7 @@ describe('AppLayout — código do login por e-mail', () => {
 
     renderWithCodeRoute();
 
-    expect(await screen.findByText('Ecrã do código')).toBeInTheDocument();
+    expect(await screen.findByText('Tela do código')).toBeInTheDocument();
   });
 
   it('com o código já posto, entra', async () => {
@@ -161,7 +161,7 @@ describe('AppLayout — código do login por e-mail', () => {
 
     renderWithCodeRoute();
 
-    expect(await screen.findByText('Ecrã do código')).toBeInTheDocument();
+    expect(await screen.findByText('Tela do código')).toBeInTheDocument();
   });
 
   it('um cadastro sem o código posto vai pôr o código', async () => {

@@ -6,7 +6,7 @@ export interface ErrorScreenProps {
   onRetry: () => void;
 }
 
-/** "Algo correu mal": nunca uma tela em branco (#33). */
+/** "Algo deu errado": nunca uma tela em branco (#33). */
 export function ErrorScreen({ reference, onRetry }: ErrorScreenProps) {
   return (
     <div className="flex min-h-[60vh] items-center justify-center p-6">
@@ -14,9 +14,9 @@ export function ErrorScreen({ reference, onRetry }: ErrorScreenProps) {
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
           <AlertTriangle className="h-6 w-6 text-red-600" />
         </div>
-        <h1 className="mt-4 text-xl font-bold text-gray-900">Algo correu mal</h1>
+        <h1 className="mt-4 text-xl font-bold text-gray-900">Algo deu errado</h1>
         <p className="mt-2 text-sm text-gray-600">
-          Esta página encontrou um erro. Tenta de novo; se continuar, diz-nos a referência abaixo.
+          Esta página encontrou um erro. Tente de novo; se continuar, informe a referência abaixo.
         </p>
         {reference && <p className="mt-3 font-mono text-xs text-gray-400">{`ref ${reference}`}</p>}
         <div className="mt-6 flex flex-col gap-2">

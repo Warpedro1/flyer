@@ -25,7 +25,7 @@ function renderPage() {
       <Routes>
         <Route path="/login/code" element={<EmailCodePage />} />
         <Route path="/" element={<p>Início</p>} />
-        <Route path="/login" element={<p>Ecrã de login</p>} />
+        <Route path="/login" element={<p>Tela de login</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -109,7 +109,7 @@ describe('EmailCodePage', () => {
     await user.click(screen.getByRole('button', { name: /usar outra conta/i }));
 
     expect(signOut).toHaveBeenCalled();
-    expect(await screen.findByText('Ecrã de login')).toBeInTheDocument();
+    expect(await screen.findByText('Tela de login')).toBeInTheDocument();
   });
 
   it('sem sessão volta ao login', () => {
@@ -117,7 +117,7 @@ describe('EmailCodePage', () => {
 
     renderPage();
 
-    expect(screen.getByText('Ecrã de login')).toBeInTheDocument();
+    expect(screen.getByText('Tela de login')).toBeInTheDocument();
     expect(sendEmailCode).not.toHaveBeenCalled();
   });
 
@@ -132,19 +132,19 @@ describe('EmailCodePage', () => {
 
   it('uma conta que já não existe (session_invalid) termina a sessão e volta ao login', async () => {
     sendEmailCode.mockRejectedValue(
-      apiResponseError(401, { detail: 'Sessão inválida: entra outra vez.', code: 'session_invalid' }),
+      apiResponseError(401, { detail: 'Sessão inválida: entre novamente.', code: 'session_invalid' }),
     );
 
     renderPage();
 
-    expect(await screen.findByText('Ecrã de login')).toBeInTheDocument();
+    expect(await screen.findByText('Tela de login')).toBeInTheDocument();
     expect(signOut).toHaveBeenCalled();
   });
 
   it('um código pedido há menos de 1 minuto diz isso mesmo', async () => {
     sendEmailCode.mockRejectedValue(
       apiResponseError(429, {
-        detail: 'Já enviámos um código há menos de 1 minuto. Espera um pouco e pede outro.',
+        detail: 'Já enviamos um código há menos de 1 minuto. Aguarde um pouco e peça outro.',
         code: 'email_code_recently_sent',
       }),
     );

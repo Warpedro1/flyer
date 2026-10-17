@@ -155,7 +155,7 @@ export default function EventDetailsPage() {
     if (!event || !id) return;
     if (!canCheckInPhysically) {
       setCheckError(
-        'O check-in usa a tua posição real. Ativa o GPS e permite a localização neste site.',
+        'O check-in usa sua posição real. Ative o GPS e permita a localização neste site.',
       );
       return;
     }
@@ -171,7 +171,7 @@ export default function EventDetailsPage() {
       setTrophy(t);
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 409) {
-        setCheckError('Já obtiveste este troféu para este evento.');
+        setCheckError('Você já ganhou o troféu deste evento.');
       } else {
         setCheckError(formatApiError(err));
       }
@@ -220,7 +220,7 @@ export default function EventDetailsPage() {
     return (
       <div className="p-6">
         <NotFoundContent
-          title="Não encontrámos este evento"
+          title="Não encontramos este evento"
           message="Pode ter sido apagado, ou o link está errado."
         />
       </div>
@@ -251,13 +251,13 @@ export default function EventDetailsPage() {
   if (myStatus === 'admitted') {
     rsvpAction = (
       <p className="rounded-2xl border border-green-200 bg-green-50 py-4 text-center font-semibold text-green-800">
-        Já entraste
+        Você já entrou
       </p>
     );
   } else if (myStatus === 'confirmed' || myStatus === 'called') {
     rsvpAction = (
       <Link to={`/events/${id}/ticket`} className={primaryButton}>
-        Ver o meu bilhete
+        Ver meu ingresso
       </Link>
     );
   } else if (myStatus === 'waitlisted') {
@@ -299,7 +299,7 @@ export default function EventDetailsPage() {
               type="button"
               onClick={() => void handleShare()}
               className="rounded-full bg-white/90 p-2.5 text-gray-800 shadow-md backdrop-blur transition hover:bg-white"
-              aria-label="Partilhar"
+              aria-label="Compartilhar"
             >
               <Share2 className="h-5 w-5" />
             </button>
@@ -464,23 +464,23 @@ export default function EventDetailsPage() {
           <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-900">
             <p className="flex items-center gap-2 font-bold">
               <BellRing className="h-5 w-5" />
-              É a tua vez!
+              É a sua vez!
             </p>
             <p className="mt-1 text-sm">
-              Mostra o teu bilhete à entrada antes que o prazo acabe.
+              Mostre seu ingresso na entrada antes que o prazo acabe.
             </p>
           </div>
         )}
 
         {myStatus === 'waitlisted' && capacity?.my_waitlist_position != null && (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
-            És o {capacity.my_waitlist_position}.º da lista de espera.
+            Você é o {capacity.my_waitlist_position}º da lista de espera.
           </div>
         )}
 
         {myStatus === 'no_show' && (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
-            A tua chamada expirou. Podes voltar a entrar na fila.
+            Sua chamada expirou. Você pode entrar na fila de novo.
           </div>
         )}
 
@@ -526,7 +526,7 @@ export default function EventDetailsPage() {
             to={`/events/${id}/attendees`}
             className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:border-red-200"
           >
-            <span className="font-medium text-gray-900">Gerir participantes</span>
+            <span className="font-medium text-gray-900">Gerenciar participantes</span>
             <QrCode className="h-5 w-5 text-red-600" />
           </Link>
         )}
@@ -571,10 +571,10 @@ export default function EventDetailsPage() {
             type="button"
             onClick={() => void handleCheckIn()}
             disabled={checking || !checkinAllowed(event)}
-            title={!canCheckInPhysically ? 'Ativa o GPS para fazer check-in' : undefined}
+            title={!canCheckInPhysically ? 'Ative o GPS para fazer check-in' : undefined}
             className="w-full rounded-2xl bg-red-600 py-4 font-semibold text-white shadow-lg shadow-red-200 transition hover:bg-red-700 disabled:opacity-60"
           >
-            {checking ? 'A confirmar…' : isPlace ? 'Check-in no lugar' : 'Check-in no evento'}
+            {checking ? 'Confirmando…' : isPlace ? 'Check-in no lugar' : 'Check-in no evento'}
           </button>
         </div>
       </div>

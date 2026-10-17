@@ -20,7 +20,7 @@ function renderPage() {
       <Routes>
         <Route path="/complete-profile" element={<CompleteProfilePage />} />
         <Route path="/" element={<p>Início</p>} />
-        <Route path="/login" element={<p>Ecrã de login</p>} />
+        <Route path="/login" element={<p>Tela de login</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -54,7 +54,7 @@ describe('CompleteProfilePage', () => {
   it('explica para que servem e que só a pessoa os vê', () => {
     renderPage();
 
-    expect(screen.getByText(/só tu vês/i)).toBeInTheDocument();
+    expect(screen.getByText(/só você vê/i)).toBeInTheDocument();
   });
 
   it('valida antes de enviar', async () => {
@@ -84,7 +84,7 @@ describe('CompleteProfilePage', () => {
     await user.click(screen.getByRole('button', { name: /usar outra conta/i }));
 
     expect(signOut).toHaveBeenCalled();
-    expect(await screen.findByText('Ecrã de login')).toBeInTheDocument();
+    expect(await screen.findByText('Tela de login')).toBeInTheDocument();
   });
 
   it('sem sessão volta ao login', () => {
@@ -92,6 +92,6 @@ describe('CompleteProfilePage', () => {
 
     renderPage();
 
-    expect(screen.getByText('Ecrã de login')).toBeInTheDocument();
+    expect(screen.getByText('Tela de login')).toBeInTheDocument();
   });
 });

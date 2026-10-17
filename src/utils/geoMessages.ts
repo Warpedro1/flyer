@@ -4,18 +4,18 @@ export function friendlyGeoError(message: string): string {
   if (m.includes('network service') || m.includes('query location')) {
     return (
       'O navegador não conseguiu obter a posição (serviço de rede/localização). ' +
-      'No Windows: Definições → Privacidade → Localização, e permite localização para aplicações de ambiente de trabalho. ' +
-      'No Chrome: permite a localização para este site (ícone à esquerda da barra de endereços).'
+      'No Windows: Configurações → Privacidade → Localização, e permita a localização para aplicativos da área de trabalho. ' +
+      'No Chrome: permita a localização para este site (ícone à esquerda da barra de endereços).'
     );
   }
   if (m.includes('denied') || m.includes('permission')) {
-    return 'Permissão de localização recusada. Permite o acesso à localização para este site nas definições do browser.';
+    return 'Permissão de localização negada. Permita o acesso à localização para este site nas configurações do navegador.';
   }
   if (m.includes('timeout')) {
-    return 'Tempo esgotado ao pedir a localização. Tenta novamente ou usa a posição aproximada abaixo.';
+    return 'Tempo esgotado ao pedir a localização. Tente novamente ou use a posição aproximada abaixo.';
   }
   if (m.includes('unavailable') || m.includes('indisponível')) {
-    return 'Localização indisponível. Verifica se o GPS/serviço de localização está ativo ou usa a posição aproximada abaixo.';
+    return 'Localização indisponível. Verifique se o GPS/serviço de localização está ativo ou use a posição aproximada abaixo.';
   }
   return message;
 }

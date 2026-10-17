@@ -351,11 +351,11 @@ export function EventForm({
       return;
     }
     if (endsAt <= startsAt) {
-      setError('O fim tem de ser depois do início.');
+      setError('O término precisa ser depois do início.');
       return;
     }
     if (checkinOpensAt && checkinOpensAt >= endsAt) {
-      setError('O check-in tem de abrir antes do fim do evento.');
+      setError('O check-in precisa abrir antes do término do evento.');
       return;
     }
 
@@ -501,7 +501,7 @@ export function EventForm({
             Lugar do Flyer (opcional)
           </label>
           <p className="text-xs text-gray-500">
-            Se o evento acontece num lugar que já está no Flyer, escolhe-o: aparece na página do lugar.
+            Se o evento acontece em um lugar que já está no Flyer, escolha o lugar: o evento aparece na página dele.
           </p>
           <PlacePicker
             near={{ lat: effectiveLat, lng: effectiveLng }}
@@ -535,7 +535,7 @@ export function EventForm({
               disabled={geocoding || !address.trim()}
               className="shrink-0 rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
             >
-              {geocoding ? 'A verificar…' : 'Verificar'}
+              {geocoding ? 'Verificando…' : 'Verificar'}
             </button>
           </div>
           <button
@@ -544,7 +544,7 @@ export function EventForm({
             disabled={geocoding}
             className="mt-2 text-sm font-medium text-red-600 hover:underline disabled:opacity-60"
           >
-            Usar a minha localização
+            Usar minha localização
           </button>
           {showConfirmation && (
             <p className="mt-2 rounded-xl bg-green-50 px-3 py-2 text-sm text-green-800">
@@ -592,8 +592,8 @@ export function EventForm({
               onChange={(e) => setCheckinOpensAt(e.target.value)}
             />
             <p className="mt-1 text-xs text-gray-500">
-              Vazio = abre no início. Fecha sozinho no fim; também podes abrir ou fechar à mão na
-              página do evento.
+              Vazio = abre no início. Fecha sozinho no término; você também pode abrir ou fechar
+              manualmente na página do evento.
             </p>
           </div>
           <div>
@@ -733,7 +733,7 @@ export function EventForm({
               >
                 <span className="min-w-0 flex-1 truncate text-gray-700">{entry.name}</span>
                 {entry.status === 'uploading' && (
-                  <span className="shrink-0 text-gray-400">A enviar…</span>
+                  <span className="shrink-0 text-gray-400">Enviando…</span>
                 )}
                 {entry.status === 'done' && (
                   <span className="shrink-0 font-medium text-green-600">Enviado</span>
@@ -792,7 +792,7 @@ export function EventForm({
               />
               <p className="mt-1 text-xs text-gray-500">PNG, JPG, WebP ou GIF, de preferência quadrada.</p>
               {trophyIcon.status === 'uploading' && (
-                <p className="mt-1 text-sm text-gray-400">A enviar o ícone…</p>
+                <p className="mt-1 text-sm text-gray-400">Enviando o ícone…</p>
               )}
               {trophyIcon.status === 'error' && (
                 <p className="mt-1 text-sm text-red-600">{trophyIcon.error}</p>

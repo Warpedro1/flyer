@@ -415,7 +415,7 @@ describe('CreateEventPage (troféu do check-in)', () => {
     await fillRequired(user);
     await user.upload(screen.getByLabelText(/ícone do troféu/i), icon());
 
-    expect(await screen.findByText(/a enviar o ícone/i)).toBeInTheDocument();
+    expect(await screen.findByText(/enviando o ícone/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /criar evento/i })).toBeDisabled();
   });
 
@@ -491,7 +491,7 @@ describe('CreateEventPage (início, fim e abertura do check-in)', () => {
     fillWhen('2026-10-16T20:00', '2026-10-16T19:00');
     await user.click(screen.getByRole('button', { name: /criar evento/i }));
 
-    expect(await screen.findByText(/o fim tem de ser depois do início/i)).toBeInTheDocument();
+    expect(await screen.findByText(/o término precisa ser depois do início/i)).toBeInTheDocument();
     expect(createEvent).not.toHaveBeenCalled();
   });
 
@@ -508,7 +508,7 @@ describe('CreateEventPage (início, fim e abertura do check-in)', () => {
     expect(createEvent).toHaveBeenCalledWith(expect.objectContaining({ checkin_opens_at: '2026-10-16T19:30' }));
   });
 
-  it('o check-in tem de abrir antes do fim', async () => {
+  it('o check-in precisa abrir antes do fim', async () => {
     const user = userEvent.setup();
 
     renderPage();
@@ -517,7 +517,7 @@ describe('CreateEventPage (início, fim e abertura do check-in)', () => {
     fireEvent.change(screen.getByLabelText(/abrir check-in/i), { target: { value: '2026-10-16T23:30' } });
     await user.click(screen.getByRole('button', { name: /criar evento/i }));
 
-    expect(await screen.findByText(/o check-in tem de abrir antes do fim/i)).toBeInTheDocument();
+    expect(await screen.findByText(/o check-in precisa abrir antes do término/i)).toBeInTheDocument();
     expect(createEvent).not.toHaveBeenCalled();
   });
 });

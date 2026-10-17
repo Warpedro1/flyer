@@ -20,8 +20,8 @@ function renderPage() {
     <MemoryRouter initialEntries={['/signup']}>
       <Routes>
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/login" element={<p>Ecrã de login</p>} />
-        <Route path="/signup/code" element={<p>Ecrã do código do cadastro</p>} />
+        <Route path="/login" element={<p>Tela de login</p>} />
+        <Route path="/signup/code" element={<p>Tela do código do cadastro</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -116,7 +116,7 @@ describe('SignupPage', () => {
         password: 'frevo2026',
       }),
     );
-    expect(await screen.findByText('Ecrã do código do cadastro')).toBeInTheDocument();
+    expect(await screen.findByText('Tela do código do cadastro')).toBeInTheDocument();
     expect(readSignupTicket()).toEqual({ ticket: 't'.repeat(43), email: 'ana@example.com' });
   });
 
@@ -144,6 +144,6 @@ describe('SignupPage', () => {
 
     await user.click(screen.getByRole('link', { name: /já tenho conta/i }));
 
-    expect(screen.getByText('Ecrã de login')).toBeInTheDocument();
+    expect(screen.getByText('Tela de login')).toBeInTheDocument();
   });
 });

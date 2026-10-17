@@ -40,7 +40,7 @@ export default function LoginPage() {
         <div
           className="h-12 w-12 animate-spin rounded-full border-2 border-red-500 border-t-transparent"
           role="status"
-          aria-label="A carregar"
+          aria-label="Carregando"
         />
       </div>
     );
@@ -70,7 +70,7 @@ export default function LoginPage() {
   const hasSignupTicket = unconfirmed && readSignupTicket() !== null;
 
   return (
-    <AuthShell title="Entrar no Flyer" subtitle="Descobre eventos e lugares e faz check-in.">
+    <AuthShell title="Entrar no Flyer" subtitle="Descubra eventos e lugares e faça check-in.">
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
         {error && <AuthMessage tone="error">{error}</AuthMessage>}
         {unconfirmed && (
@@ -78,7 +78,7 @@ export default function LoginPage() {
             to={hasSignupTicket ? '/signup/code' : '/signup'}
             className="block w-full rounded-xl border border-red-200 py-2.5 text-center text-sm font-semibold text-red-600 hover:bg-red-50"
           >
-            {hasSignupTicket ? 'Pôr o código do cadastro' : 'Fazer o cadastro outra vez'}
+            {hasSignupTicket ? 'Digitar o código do cadastro' : 'Fazer o cadastro outra vez'}
           </Link>
         )}
         <div>
@@ -115,7 +115,7 @@ export default function LoginPage() {
           </div>
         </div>
         <button type="submit" disabled={busy} className={authPrimaryButton}>
-          {busy ? 'A entrar…' : 'Entrar'}
+          {busy ? 'Entrando…' : 'Entrar'}
         </button>
       </form>
 
@@ -135,7 +135,7 @@ export default function LoginPage() {
       </button>
 
       <p className="mt-6 text-center text-sm text-gray-600">
-        Ainda não tens conta?{' '}
+        Ainda não tem conta?{' '}
         <Link to="/signup" className={authLink}>
           Criar conta
         </Link>

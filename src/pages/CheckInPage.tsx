@@ -67,7 +67,7 @@ export default function CheckInPage() {
   const handleCheckIn = async (eventId: string) => {
     if (isEstimatedPosition || latitude === null || longitude === null) {
       setCheckError(
-        'O check-in usa a tua posição real para validar a distância ao evento. Ativa o GPS e permite a localização neste site (não uses apenas a posição aproximada de Recife).',
+        'O check-in usa sua posição real para validar a distância até o evento. Ative o GPS e permita a localização neste site (não use apenas a posição aproximada de Recife).',
       );
       return;
     }
@@ -83,7 +83,7 @@ export default function CheckInPage() {
       setTrophy(t);
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 409) {
-        setCheckError('Já obtiveste este troféu para este evento.');
+        setCheckError('Você já ganhou o troféu deste evento.');
       } else {
         setCheckError(formatApiError(err));
       }
@@ -100,7 +100,7 @@ export default function CheckInPage() {
       <div className="px-4 pt-6 sm:px-8">
         <h1 className="text-2xl font-bold text-gray-900">Check-in</h1>
         <p className="mt-1 text-gray-500">
-          Escolhe um evento próximo e confirma a tua presença para ganhar troféus.
+          Escolha um evento próximo e confirme sua presença para ganhar troféus.
         </p>
       </div>
 
@@ -131,7 +131,7 @@ export default function CheckInPage() {
               </button>
             </div>
             <p className="mt-2 text-xs text-amber-800/80">
-              O check-in só funciona com GPS real; esta opção serve só para veres eventos na lista
+              O check-in só funciona com GPS real; esta opção serve só para ver eventos na lista
               e no mapa.
             </p>
           </div>
@@ -139,7 +139,7 @@ export default function CheckInPage() {
 
         {isEstimatedPosition && (
           <div className="mb-4 rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sky-900" role="status">
-            Lista baseada em {FALLBACK_GEO.label}. Para fazer check-in, ativa a localização real.
+            Lista baseada em {FALLBACK_GEO.label}. Para fazer check-in, ative a localização real.
           </div>
         )}
 
@@ -189,10 +189,10 @@ export default function CheckInPage() {
                   type="button"
                   className="w-full rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
                   disabled={checkingId !== null || !canCheckInPhysically || !checkinAllowed(event)}
-                  title={!canCheckInPhysically ? 'Ativa o GPS para fazer check-in' : undefined}
+                  title={!canCheckInPhysically ? 'Ative o GPS para fazer check-in' : undefined}
                   onClick={() => void handleCheckIn(event.id)}
                 >
-                  {checkingId === event.id ? 'A confirmar…' : checkinButtonText(event)}
+                  {checkingId === event.id ? 'Confirmando…' : checkinButtonText(event)}
                 </button>
               }
             />
@@ -201,8 +201,8 @@ export default function CheckInPage() {
 
         {!listLoading && events.length === 0 && !listError && userPosition && (
           <p className="py-8 text-center text-gray-500">
-            Nenhum evento num raio de {CHECKIN_DISCOVER_RADIUS_KM} km. Aproxima-te do local ou
-            verifica mais tarde.
+            Nenhum evento em um raio de {CHECKIN_DISCOVER_RADIUS_KM} km. Chegue mais perto do local ou
+            volte mais tarde.
           </p>
         )}
       </div>

@@ -69,7 +69,7 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <AuthShell title="Senha nova" subtitle="Escolhe a senha que vais usar a partir de agora.">
+    <AuthShell title="Senha nova" subtitle="Escolha a senha que você vai usar a partir de agora.">
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
         {error && <AuthMessage tone="error">{error}</AuthMessage>}
         <div>
@@ -111,7 +111,7 @@ export default function ResetPasswordPage() {
           </AuthMessage>
         )}
         <button type="submit" disabled={busy} className={authPrimaryButton}>
-          {busy ? 'A guardar…' : 'Guardar senha'}
+          {busy ? 'Salvando…' : 'Salvar senha'}
         </button>
       </form>
     </AuthShell>

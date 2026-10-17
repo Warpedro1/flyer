@@ -20,7 +20,7 @@ describe('NotFoundPage', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('heading', { name: 'Não encontrámos esta página' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Não encontramos esta página' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ir para o início' })).toHaveAttribute('href', '/');
   });
 

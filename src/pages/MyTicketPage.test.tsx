@@ -98,7 +98,7 @@ describe('MyTicketPage', () => {
 
     renderPage();
 
-    expect(await screen.findByText(/é a tua vez/i)).toBeInTheDocument();
+    expect(await screen.findByText(/é a sua vez/i)).toBeInTheDocument();
     expect(screen.getByText('2:00')).toBeInTheDocument();
   });
 
@@ -109,7 +109,7 @@ describe('MyTicketPage', () => {
 
     renderPage();
 
-    expect(await screen.findByText(/já entraste/i)).toBeInTheDocument();
+    expect(await screen.findByText(/você já entrou/i)).toBeInTheDocument();
     expect(screen.queryByAltText(/código qr/i)).not.toBeInTheDocument();
     expect(getRsvpQrToken).not.toHaveBeenCalled();
   });
@@ -121,7 +121,7 @@ describe('MyTicketPage', () => {
 
     renderPage();
 
-    expect(await screen.findByText(/3 pessoas à tua frente/i)).toBeInTheDocument();
+    expect(await screen.findByText(/3 pessoas na sua frente/i)).toBeInTheDocument();
   });
 
   it('avisa quem não foi inscrito neste evento', async () => {
@@ -129,6 +129,6 @@ describe('MyTicketPage', () => {
 
     renderPage();
 
-    expect(await screen.findByText(/não estás inscrito/i)).toBeInTheDocument();
+    expect(await screen.findByText(/você não está inscrito/i)).toBeInTheDocument();
   });
 });

@@ -47,7 +47,7 @@ export default function EditEventPage() {
   if (notFound) {
     return (
       <div className="p-6">
-        <NotFoundContent title="Não encontrámos este evento" message="Pode ter sido apagado, ou o link está errado." />
+        <NotFoundContent title="Não encontramos este evento" message="Pode ter sido apagado, ou o link está errado." />
       </div>
     );
   }
@@ -74,8 +74,8 @@ export default function EditEventPage() {
         <EventForm
           mode="edit"
           initial={initial}
-          submitLabel="Guardar alterações"
-          submittingLabel="A guardar…"
+          submitLabel="Salvar alterações"
+          submittingLabel="Salvando…"
           onSubmit={handleSubmit}
         />
       )}

@@ -78,7 +78,7 @@ export const MAX_TROPHY_ICON_BYTES = MAX_IMAGE_BYTES;
 export async function uploadTrophyIcon(userId: string, file: File): Promise<string> {
   const extension = TROPHY_ICON_EXTENSIONS[file.type];
   if (!extension) {
-    throw new Error('O ícone tem de ser uma imagem PNG, JPG, WebP ou GIF.');
+    throw new Error('O ícone precisa ser uma imagem PNG, JPG, WebP ou GIF.');
   }
   if (file.size > MAX_TROPHY_ICON_BYTES) {
     const mb = Math.round(MAX_TROPHY_ICON_BYTES / (1024 * 1024));

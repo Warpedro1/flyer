@@ -82,7 +82,7 @@ export default function ScanTicketPage() {
 
     (async () => {
       if (!navigator.mediaDevices?.getUserMedia) {
-        setCameraError('Não foi possível abrir a câmara neste dispositivo.');
+        setCameraError('Não foi possível abrir a câmera neste dispositivo.');
         return;
       }
       try {
@@ -90,7 +90,7 @@ export default function ScanTicketPage() {
           video: { facingMode: 'environment' },
         });
       } catch {
-        setCameraError('Não foi possível abrir a câmara. Verifica as permissões.');
+        setCameraError('Não foi possível abrir a câmera. Verifique as permissões.');
         return;
       }
       if (cancelled) {
@@ -198,14 +198,14 @@ export default function ScanTicketPage() {
         }}
       >
         <label htmlFor="manual-token" className="block text-sm font-medium text-gray-700">
-          Código do bilhete
+          Código do ingresso
         </label>
         <input
           id="manual-token"
           type="text"
           value={manualToken}
           onChange={(event) => setManualToken(event.target.value)}
-          placeholder="Cola aqui o código se a câmara não ajudar"
+          placeholder="Cole aqui o código se a câmera não ajudar"
           className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:border-red-500"
         />
         <button
@@ -213,7 +213,7 @@ export default function ScanTicketPage() {
           disabled={busy}
           className="w-full rounded-2xl bg-red-600 py-3 font-semibold text-white transition hover:bg-red-700 disabled:opacity-60"
         >
-          {busy ? 'A validar…' : 'Validar'}
+          {busy ? 'Validando…' : 'Validar'}
         </button>
       </form>
     </div>

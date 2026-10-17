@@ -126,7 +126,7 @@ export default function DiscoverPage() {
       <div className="mb-8 mt-2 flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
         <div>
           <h2 className="text-3xl font-bold text-gray-900">Na Linha da Frente</h2>
-          <p className="mt-1 text-gray-500">Experiências recomendadas para ti</p>
+          <p className="mt-1 text-gray-500">Experiências recomendadas para você</p>
         </div>
         <div className="flex w-full flex-wrap items-center gap-3 md:w-auto">
           <button
@@ -163,9 +163,9 @@ export default function DiscoverPage() {
           <div
             className="h-10 w-10 animate-spin rounded-full border-2 border-red-600 border-t-transparent"
             role="status"
-            aria-label="A obter localização"
+            aria-label="Obtendo localização"
           />
-          <p className="mt-3 text-gray-500">A obter a tua posição...</p>
+          <p className="mt-3 text-gray-500">Obtendo sua posição...</p>
         </div>
       )}
 
@@ -196,8 +196,8 @@ export default function DiscoverPage() {
 
       {isEstimatedPosition && (
         <div className="mb-6 rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sky-900" role="status">
-          A mostrar eventos perto de {FALLBACK_GEO.label}. Quando ativares o GPS, usa
-          &quot;Atualizar localização&quot; para resultados à tua volta.
+          Mostrando eventos perto de {FALLBACK_GEO.label}. Quando ativar o GPS, use
+          &quot;Atualizar localização&quot; para ver resultados perto de você.
         </div>
       )}
 
@@ -207,8 +207,8 @@ export default function DiscoverPage() {
           role="status"
         >
           <p>
-            Ainda não conhecemos os teus gostos: estes eventos estão perto de ti, por data. Faz
-            o onboarding no Chat para recomendações à tua medida.
+            Ainda não conhecemos seus gostos: estes eventos estão perto de você, por data. Faça
+            o onboarding no Chat para receber recomendações sob medida.
           </p>
           <button
             type="button"
@@ -257,7 +257,7 @@ export default function DiscoverPage() {
             className="h-8 w-8 animate-spin rounded-full border-2 border-red-600 border-t-transparent"
             role="status"
           />
-          <p className="mt-2 text-sm text-gray-500">A carregar mais eventos...</p>
+          <p className="mt-2 text-sm text-gray-500">Carregando mais eventos...</p>
         </div>
       )}
 
@@ -267,7 +267,7 @@ export default function DiscoverPage() {
             className="h-10 w-10 animate-spin rounded-full border-2 border-red-600 border-t-transparent"
             role="status"
           />
-          <p className="mt-3 text-gray-500">A carregar eventos...</p>
+          <p className="mt-3 text-gray-500">Carregando eventos...</p>
         </div>
       )}
 
@@ -277,7 +277,7 @@ export default function DiscoverPage() {
         effectiveLat !== null &&
         effectiveLng !== null && (
           <p className="py-12 text-center text-gray-500">
-            Nenhum evento encontrado neste raio. Tenta mais tarde.
+            Nenhum evento encontrado neste raio. Tente mais tarde.
           </p>
         )}
 

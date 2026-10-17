@@ -34,8 +34,8 @@ export default function MyEventsPage() {
     <div className="mx-auto max-w-7xl p-4 pb-28 sm:p-8 md:pb-8">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Os meus eventos</h1>
-          <p className="mt-1 text-gray-500">Eventos que criaste no Flyer.</p>
+          <h1 className="text-3xl font-bold text-gray-900">Meus eventos</h1>
+          <p className="mt-1 text-gray-500">Eventos que você criou no Flyer.</p>
         </div>
         <button
           type="button"
@@ -61,7 +61,7 @@ export default function MyEventsPage() {
 
       {!loading && !error && events.length === 0 && (
         <p className="py-12 text-center text-gray-500">
-          Ainda não criaste eventos. Clica em &quot;Criar evento&quot; para começar.
+          Você ainda não criou eventos. Clique em &quot;Criar evento&quot; para começar.
         </p>
       )}
 

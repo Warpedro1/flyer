@@ -36,11 +36,11 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <AuthShell title="Esqueci a senha" subtitle="Enviamos um link para criares uma senha nova.">
+    <AuthShell title="Esqueci a senha" subtitle="Enviamos um link para você criar uma senha nova.">
       {sentTo ? (
         <div className="space-y-4">
           <AuthMessage tone="success">
-            Se existir uma conta com {sentTo}, enviámos um link para criar uma senha nova. Vê também a
+            Se existir uma conta com {sentTo}, enviamos um link para criar uma senha nova. Confira também a
             pasta de spam.
           </AuthMessage>
           <p className="text-center text-sm">
@@ -67,7 +67,7 @@ export default function ForgotPasswordPage() {
             />
           </div>
           <button type="submit" disabled={busy} className={authPrimaryButton}>
-            {busy ? 'A enviar…' : 'Enviar link'}
+            {busy ? 'Enviando…' : 'Enviar link'}
           </button>
           <p className="text-center text-sm">
             <Link to="/login" className={authLink}>

@@ -19,7 +19,7 @@ function renderPage() {
       <Routes>
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/" element={<p>Início</p>} />
-        <Route path="/forgot-password" element={<p>Ecrã esqueci a senha</p>} />
+        <Route path="/forgot-password" element={<p>Tela esqueci a senha</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -42,7 +42,7 @@ describe('ResetPasswordPage', () => {
 
     await user.type(screen.getByLabelText(/^nova senha/i), 'frevo2026');
     await user.type(screen.getByLabelText(/^confirmar senha/i), 'frevo2026');
-    await user.click(screen.getByRole('button', { name: /guardar senha/i }));
+    await user.click(screen.getByRole('button', { name: /salvar senha/i }));
 
     await waitFor(() => expect(updatePassword).toHaveBeenCalledWith('frevo2026'));
     expect(await screen.findByText('Início')).toBeInTheDocument();
@@ -55,7 +55,7 @@ describe('ResetPasswordPage', () => {
 
     await user.type(screen.getByLabelText(/^nova senha/i), 'curta1');
     await user.type(screen.getByLabelText(/^confirmar senha/i), 'curta2');
-    await user.click(screen.getByRole('button', { name: /guardar senha/i }));
+    await user.click(screen.getByRole('button', { name: /salvar senha/i }));
 
     expect(await screen.findByText('Pelo menos 8 caracteres')).toBeInTheDocument();
     expect(screen.getByText(/as senhas não coincidem/i)).toBeInTheDocument();
@@ -68,7 +68,7 @@ describe('ResetPasswordPage', () => {
 
     expect(screen.getByText(/o link expirou ou já foi usado/i)).toBeInTheDocument();
     await user.click(screen.getByRole('link', { name: /pedir outro link/i }));
-    expect(screen.getByText('Ecrã esqueci a senha')).toBeInTheDocument();
+    expect(screen.getByText('Tela esqueci a senha')).toBeInTheDocument();
   });
 
   it('uma sessão normal não muda a senha por aqui', () => {

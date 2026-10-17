@@ -44,8 +44,8 @@ export default function SignupCodePage() {
       <AuthShell title="Ativar conta">
         <div className="space-y-4">
           <AuthMessage tone="info">
-            Por segurança, o código só ativa a conta no navegador onde fizeste o cadastro. Abre-o lá, ou
-            faz o cadastro outra vez aqui: enviamos um código novo.
+            Por segurança, o código só ativa a conta no navegador em que você fez o cadastro. Digite o código lá ou
+            faça o cadastro de novo aqui: enviamos um código novo.
           </AuthMessage>
           <Link to="/signup" className={`${authPrimaryButton} block text-center`}>
             Fazer o cadastro outra vez
@@ -96,7 +96,7 @@ export default function SignupCodePage() {
     setResendAt(new Date(Date.now() + RESEND_WAIT_MS).toISOString());
     const result = await resendConfirmation(ticket.email);
     if (result.ok) {
-      setNotice('Enviámos um código novo.');
+      setNotice('Enviamos um código novo.');
     } else {
       setError(result.message);
     }
@@ -110,13 +110,13 @@ export default function SignupCodePage() {
   return (
     <AuthShell
       title="Ativar conta"
-      subtitle={`Enviámos um código de 6 dígitos para ${ticket.email}. Ele vale por 10 minutos.`}
+      subtitle={`Enviamos um código de 6 dígitos para ${ticket.email}. Ele vale por 10 minutos.`}
     >
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
         {error && <AuthMessage tone="error">{error}</AuthMessage>}
         {notice && <AuthMessage tone="success">{notice}</AuthMessage>}
         {codeAccepted ? (
-          <AuthMessage tone="info">O código já foi aceite. Falta só ativar a conta.</AuthMessage>
+          <AuthMessage tone="info">O código já foi aceito. Falta só ativar a conta.</AuthMessage>
         ) : (
           <div>
             <label htmlFor="code" className={authLabel}>
@@ -141,7 +141,7 @@ export default function SignupCodePage() {
           disabled={busy || (!codeAccepted && code.length !== 6)}
           className={authPrimaryButton}
         >
-          {busy ? 'A ativar…' : 'Ativar conta'}
+          {busy ? 'Ativando…' : 'Ativar conta'}
         </button>
       </form>
       <div className="mt-4 flex flex-col gap-2 text-sm">

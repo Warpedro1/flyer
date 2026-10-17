@@ -21,9 +21,9 @@ function renderPage() {
     <MemoryRouter initialEntries={['/login']}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/login/code" element={<p>Ecrã do código</p>} />
-        <Route path="/signup" element={<p>Ecrã de cadastro</p>} />
-        <Route path="/forgot-password" element={<p>Ecrã esqueci a senha</p>} />
+        <Route path="/login/code" element={<p>Tela do código</p>} />
+        <Route path="/signup" element={<p>Tela de cadastro</p>} />
+        <Route path="/forgot-password" element={<p>Tela esqueci a senha</p>} />
         <Route path="/" element={<p>Início</p>} />
       </Routes>
     </MemoryRouter>,
@@ -52,7 +52,7 @@ describe('LoginPage', () => {
     expect(screen.getByRole('button', { name: /continuar com google/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole('link', { name: /criar conta/i }));
-    expect(screen.getByText('Ecrã de cadastro')).toBeInTheDocument();
+    expect(screen.getByText('Tela de cadastro')).toBeInTheDocument();
   });
 
   it('o link "Esqueci a senha" leva à recuperação', async () => {
@@ -61,7 +61,7 @@ describe('LoginPage', () => {
 
     await user.click(screen.getByRole('link', { name: /esqueci a senha/i }));
 
-    expect(screen.getByText('Ecrã esqueci a senha')).toBeInTheDocument();
+    expect(screen.getByText('Tela esqueci a senha')).toBeInTheDocument();
   });
 
   it('entrar com a senha leva ao código enviado por e-mail', async () => {
@@ -72,7 +72,7 @@ describe('LoginPage', () => {
     await fill(user);
 
     await waitFor(() => expect(signInWithPassword).toHaveBeenCalledWith('ana@example.com', 'frevo2026'));
-    expect(await screen.findByText('Ecrã do código')).toBeInTheDocument();
+    expect(await screen.findByText('Tela do código')).toBeInTheDocument();
   });
 
   it('com a senha errada não diz se o e-mail existe', async () => {
@@ -97,7 +97,7 @@ describe('LoginPage', () => {
 
     await fill(user);
 
-    expect(await screen.findByRole('link', { name: /pôr o código/i })).toHaveAttribute('href', '/signup/code');
+    expect(await screen.findByRole('link', { name: /digitar o código/i })).toHaveAttribute('href', '/signup/code');
     expect(screen.queryByRole('button', { name: /reenviar link/i })).not.toBeInTheDocument();
   });
 
@@ -129,6 +129,6 @@ describe('LoginPage', () => {
 
     renderPage();
 
-    expect(screen.getByText('Ecrã do código')).toBeInTheDocument();
+    expect(screen.getByText('Tela do código')).toBeInTheDocument();
   });
 });
