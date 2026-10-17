@@ -251,7 +251,18 @@ export default function EventDetailsPage() {
   // A ação depende do lugar da pessoa na fila. Um evento sem lotação nunca chega
   // ao ramo da lista de espera: `isFull` é sempre falso sem `capacity`.
   let rsvpAction: React.ReactNode = null;
-  if (method === 'none') {
+  if (isCreator && id) {
+    // Quem organiza não confirma presença no próprio evento: gerencia quem vai.
+    rsvpAction = (
+      <Link
+        to={`/events/${id}/attendees`}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 py-4 font-semibold text-white shadow-lg shadow-red-200 transition hover:bg-red-700"
+      >
+        <QrCode className="h-5 w-5" />
+        Gerenciar participantes
+      </Link>
+    );
+  } else if (method === 'none') {
     rsvpAction =
       myStatus === 'confirmed' ? (
         <button
@@ -545,16 +556,6 @@ export default function EventDetailsPage() {
           </div>
         )}
 
-        {isCreator && id && (
-          <Link
-            to={`/events/${id}/attendees`}
-            className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:border-red-200"
-          >
-            <span className="font-medium text-gray-900">Gerenciar participantes</span>
-            <QrCode className="h-5 w-5 text-red-600" />
-          </Link>
-        )}
-
         {rsvpError && (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800">
             {rsvpError}
@@ -591,7 +592,7 @@ export default function EventDetailsPage() {
               {statusText}
             </p>
           )}
-          {method === 'qr' && myStatus !== 'admitted' && (
+          {method === 'qr' && !isCreator && myStatus !== 'admitted' && (
             <p className="text-center text-sm text-gray-600">
               O check-in é feito na entrada: mostre seu ingresso.
             </p>
