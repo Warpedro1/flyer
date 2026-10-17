@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import {
   AuthMessage,
@@ -16,8 +16,8 @@ const RATE_LIMITED = new Set(['over_email_send_rate_limit', 'over_request_rate_l
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
-  const [sentTo, setSentTo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -32,50 +32,36 @@ export default function ForgotPasswordPage() {
       setError(result.message);
       return;
     }
-    setSentTo(address);
+    void navigate(`/reset-password?email=${encodeURIComponent(address)}`);
   };
 
   return (
-    <AuthShell title="Esqueci a senha" subtitle="Enviamos um link para você criar uma senha nova.">
-      {sentTo ? (
-        <div className="space-y-4">
-          <AuthMessage tone="success">
-            Se existir uma conta com {sentTo}, enviamos um link para criar uma senha nova. Confira também a
-            pasta de spam.
-          </AuthMessage>
-          <p className="text-center text-sm">
-            <Link to="/login" className={authLink}>
-              Voltar ao login
-            </Link>
-          </p>
+    <AuthShell title="Esqueci a senha" subtitle="Vamos enviar um código de 6 dígitos para você criar uma senha nova.">
+      <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+        {error && <AuthMessage tone="error">{error}</AuthMessage>}
+        <div>
+          <label htmlFor="email" className={authLabel}>
+            E-mail
+          </label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            required
+            className={authInput}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
         </div>
-      ) : (
-        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
-          {error && <AuthMessage tone="error">{error}</AuthMessage>}
-          <div>
-            <label htmlFor="email" className={authLabel}>
-              E-mail
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              className={authInput}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-          <button type="submit" disabled={busy} className={authPrimaryButton}>
-            {busy ? 'Enviando…' : 'Enviar link'}
-          </button>
-          <p className="text-center text-sm">
-            <Link to="/login" className={authLink}>
-              Voltar ao login
-            </Link>
-          </p>
-        </form>
-      )}
+        <button type="submit" disabled={busy} className={authPrimaryButton}>
+          {busy ? 'Enviando…' : 'Enviar código'}
+        </button>
+        <p className="text-center text-sm">
+          <Link to="/login" className={authLink}>
+            Voltar ao login
+          </Link>
+        </p>
+      </form>
     </AuthShell>
   );
 }
