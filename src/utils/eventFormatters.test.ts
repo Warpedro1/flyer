@@ -36,6 +36,7 @@ function item(overrides: Partial<EventRead> = {}): EventRead {
     checkin_opens_at: null,
     checkin_closes_at: null,
     checkin_status: null,
+    checkin_method: 'qr',
     ...overrides,
   };
 }

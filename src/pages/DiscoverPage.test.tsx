@@ -55,6 +55,7 @@ function event(id: string, title: string): EventRead {
     checkin_opens_at: null,
     checkin_closes_at: null,
     checkin_status: 'open',
+    checkin_method: 'qr',
   };
 }
 

@@ -76,6 +76,7 @@ function event(capacityState: EventCapacityRead | null, overrides: Partial<Event
     checkin_opens_at: null,
     checkin_closes_at: null,
     checkin_status: 'open',
+    checkin_method: 'qr',
     ...overrides,
   };
 }
@@ -258,8 +259,8 @@ describe('EventDetailsPage — navegação', () => {
 
     renderPage();
 
-    const checkInButton = await screen.findByRole('button', { name: /check-in no evento/i });
-    const bar = checkInButton.closest('[data-testid="event-actions"]');
+    const goingButton = await screen.findByRole('button', { name: /^vou$/i });
+    const bar = goingButton.closest('[data-testid="event-actions"]');
     expect(bar).toHaveClass('sticky');
     expect(bar).not.toHaveClass('fixed');
   });
@@ -334,7 +335,9 @@ describe('EventDetailsPage — lugares', () => {
 
 describe('EventDetailsPage — troféu do check-in', () => {
   beforeEach(() => {
-    getEventById.mockReset().mockResolvedValue(event(null));
+    // Check-in por GPS é dos lugares (decisões 2026-10-17).
+    getEventById.mockReset().mockResolvedValue(makePlace({ id: 'evt-1' }));
+    getPlaceEvents.mockReset().mockResolvedValue([]);
     checkIn.mockReset();
   });
 
@@ -350,7 +353,7 @@ describe('EventDetailsPage — troféu do check-in', () => {
     });
 
     renderPage();
-    await user.click(await screen.findByRole('button', { name: /check-in no evento/i }));
+    await user.click(await screen.findByRole('button', { name: /check-in no lugar/i }));
 
     expect(await screen.findByRole('img', { name: 'Passista' })).toHaveAttribute(
       'src',
@@ -383,7 +386,7 @@ describe('EventDetailsPage — janela de check-in', () => {
     renderPage();
 
     expect(await screen.findByText(/check-in abre às 20:00 de 16\/10/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /check-in no evento/i })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /check-in no evento/i })).not.toBeInTheDocument();
   });
 
   it('aberto diz até quando', async () => {
@@ -392,7 +395,6 @@ describe('EventDetailsPage — janela de check-in', () => {
     renderPage();
 
     expect(await screen.findByText(/check-in aberto até à?s 23:00/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /check-in no evento/i })).toBeEnabled();
   });
 
   it('fechado não deixa fazer check-in', async () => {
@@ -401,7 +403,6 @@ describe('EventDetailsPage — janela de check-in', () => {
     renderPage();
 
     expect(await screen.findByText(/check-in fechado/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /check-in no evento/i })).toBeDisabled();
   });
 
   it('um lugar fechado diz que o check-in é no horário de funcionamento', async () => {
@@ -498,5 +499,75 @@ describe('EventDetailsPage — evento que não existe (#33)', () => {
     renderPage();
 
     expect(await screen.findByText(/código: internal_error · ref abc123def456/)).toBeInTheDocument();
+  });
+});
+
+describe('EventDetailsPage — como cada evento faz check-in (2026-10-17)', () => {
+  beforeEach(() => {
+    getEventById.mockReset();
+    getPlaceEvents.mockReset().mockResolvedValue([]);
+    joinEvent.mockReset();
+    leaveEvent.mockReset();
+    checkIn.mockReset();
+  });
+
+  it('num evento do app, o check-in é mostrar o ingresso na entrada', async () => {
+    getEventById.mockResolvedValue(event(state({ my_status: 'confirmed' })));
+
+    renderPage();
+
+    expect(await screen.findByText(/check-in é feito na entrada: mostre seu ingresso/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /check-in no evento/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /ver meu ingresso/i })).toBeInTheDocument();
+  });
+
+  it('um evento importado é só informativo: tem "Tenho interesse" e não tem check-in', async () => {
+    const user = userEvent.setup();
+    getEventById.mockResolvedValue(
+      event(null, {
+        checkin_method: 'none',
+        checkin_status: 'open',
+        source_url: 'https://www.sympla.com.br/evento/x/1',
+      }),
+    );
+    joinEvent.mockResolvedValue({});
+
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: /tenho interesse/i }));
+
+    expect(joinEvent).toHaveBeenCalledWith('evt-1');
+    expect(screen.queryByRole('button', { name: /check-in/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('checkin-status')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /sympla/i })).toHaveAttribute(
+      'href',
+      'https://www.sympla.com.br/evento/x/1',
+    );
+  });
+
+  it('quem já tem interesse pode desmarcar, e não ganha ingresso', async () => {
+    const user = userEvent.setup();
+    getEventById.mockResolvedValue(
+      event(state({ capacity: null, my_status: 'confirmed' }), {
+        checkin_method: 'none',
+        source_url: 'https://www.sympla.com.br/evento/x/1',
+      }),
+    );
+    leaveEvent.mockResolvedValue(undefined);
+
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: /você tem interesse/i }));
+
+    expect(leaveEvent).toHaveBeenCalledWith('evt-1');
+    expect(screen.queryByRole('link', { name: /ingresso/i })).not.toBeInTheDocument();
+  });
+
+  it('um lugar continua com o check-in por GPS', async () => {
+    getEventById.mockResolvedValue(makePlace({ id: 'evt-1' }));
+
+    renderPage();
+
+    expect(await screen.findByRole('button', { name: /check-in no lugar/i })).toBeEnabled();
   });
 });

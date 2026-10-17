@@ -236,7 +236,10 @@ export default function EventDetailsPage() {
     );
   }
 
-  const statusText = checkinStatusText(event);
+  // Decisões 2026-10-17: eventos do app fazem check-in pelo QR na entrada; lugares por
+  // GPS; eventos importados são só informativos ("Tenho interesse", sem ingresso).
+  const method = event.checkin_method;
+  const statusText = method === 'none' ? null : checkinStatusText(event);
 
   // `block`: o bilhete é um <Link> (um <a>, inline), e sem isto o w-full e o py-4
   // não ocupam espaço.
@@ -248,7 +251,28 @@ export default function EventDetailsPage() {
   // A ação depende do lugar da pessoa na fila. Um evento sem lotação nunca chega
   // ao ramo da lista de espera: `isFull` é sempre falso sem `capacity`.
   let rsvpAction: React.ReactNode = null;
-  if (myStatus === 'admitted') {
+  if (method === 'none') {
+    rsvpAction =
+      myStatus === 'confirmed' ? (
+        <button
+          type="button"
+          onClick={() => void handleLeave()}
+          disabled={rsvpBusy}
+          className={secondaryButton}
+        >
+          Você tem interesse
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => void handleJoin()}
+          disabled={rsvpBusy}
+          className={primaryButton}
+        >
+          Tenho interesse
+        </button>
+      );
+  } else if (myStatus === 'admitted') {
     rsvpAction = (
       <p className="rounded-2xl border border-green-200 bg-green-50 py-4 text-center font-semibold text-green-800">
         Você já entrou
@@ -567,15 +591,22 @@ export default function EventDetailsPage() {
               {statusText}
             </p>
           )}
-          <button
-            type="button"
-            onClick={() => void handleCheckIn()}
-            disabled={checking || !checkinAllowed(event)}
-            title={!canCheckInPhysically ? 'Ative o GPS para fazer check-in' : undefined}
-            className="w-full rounded-2xl bg-red-600 py-4 font-semibold text-white shadow-lg shadow-red-200 transition hover:bg-red-700 disabled:opacity-60"
-          >
-            {checking ? 'Confirmando…' : isPlace ? 'Check-in no lugar' : 'Check-in no evento'}
-          </button>
+          {method === 'qr' && myStatus !== 'admitted' && (
+            <p className="text-center text-sm text-gray-600">
+              O check-in é feito na entrada: mostre seu ingresso.
+            </p>
+          )}
+          {method === 'gps' && (
+            <button
+              type="button"
+              onClick={() => void handleCheckIn()}
+              disabled={checking || !checkinAllowed(event)}
+              title={!canCheckInPhysically ? 'Ative o GPS para fazer check-in' : undefined}
+              className="w-full rounded-2xl bg-red-600 py-4 font-semibold text-white shadow-lg shadow-red-200 transition hover:bg-red-700 disabled:opacity-60"
+            >
+              {checking ? 'Confirmando…' : 'Check-in no lugar'}
+            </button>
+          )}
         </div>
       </div>
     </div>
