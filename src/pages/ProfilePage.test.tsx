@@ -52,4 +52,15 @@ describe('ProfilePage', () => {
     expect(await screen.findByText('***.982.247-**')).toBeInTheDocument();
     expect(screen.getByText('(81) 9****-5678')).toBeInTheDocument();
   });
+
+  it('sem celular, diz que não foi informado (Warpedro1/flyer-back#29)', async () => {
+    getProfileStatus.mockResolvedValue({ complete: true, cpf_masked: '***.982.247-**', phone_masked: null });
+    render(
+      <MemoryRouter>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Não informado')).toBeInTheDocument();
+  });
 });

@@ -28,7 +28,7 @@ function renderPage() {
 
 async function fill(user: ReturnType<typeof userEvent.setup>, cpf = '52998224725', phone = '81912345678') {
   await user.type(screen.getByLabelText(/^cpf/i), cpf);
-  await user.type(screen.getByLabelText(/^celular/i), phone);
+  if (phone) await user.type(screen.getByLabelText(/^celular/i), phone);
   await user.click(screen.getByRole('button', { name: /continuar/i }));
 }
 
@@ -48,6 +48,17 @@ describe('CompleteProfilePage', () => {
     await waitFor(() =>
       expect(completeProfileIdentity).toHaveBeenCalledWith({ cpf: '529.982.247-25', phone: '(81) 91234-5678' }),
     );
+    expect(await screen.findByText('Início')).toBeInTheDocument();
+  });
+
+  it('basta o CPF: o celular é opcional (Warpedro1/flyer-back#29)', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(screen.getByLabelText(/^celular/i)).not.toBeRequired();
+    await fill(user, '52998224725', '');
+
+    await waitFor(() => expect(completeProfileIdentity).toHaveBeenCalledWith({ cpf: '529.982.247-25' }));
     expect(await screen.findByText('Início')).toBeInTheDocument();
   });
 

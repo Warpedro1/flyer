@@ -41,7 +41,7 @@ async function fill(
   await user.type(screen.getByLabelText(/^nome/i), name);
   await user.type(screen.getByLabelText(/^e-mail/i), email);
   await user.type(screen.getByLabelText(/^cpf/i), cpf);
-  await user.type(screen.getByLabelText(/^celular/i), phone);
+  if (phone) await user.type(screen.getByLabelText(/^celular/i), phone);
   await user.type(screen.getByLabelText(/^senha/i), password);
   await user.type(screen.getByLabelText(/^confirmar senha/i), confirm);
   await user.click(screen.getByRole('button', { name: /criar conta/i }));
@@ -118,6 +118,24 @@ describe('SignupPage', () => {
     );
     expect(await screen.findByText('Tela do código do cadastro')).toBeInTheDocument();
     expect(readSignupTicket()).toEqual({ ticket: 't'.repeat(43), email: 'ana@example.com' });
+  });
+
+  it('o celular é opcional: sem ele, a conta é criada sem o campo', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(screen.getByLabelText(/^celular/i)).not.toBeRequired();
+    expect(screen.getByText(/opcional/i)).toBeInTheDocument();
+    await fill(user, { phone: '' });
+
+    await waitFor(() =>
+      expect(signUpWithEmail).toHaveBeenCalledWith({
+        name: 'Ana',
+        email: 'ana@example.com',
+        cpf: '529.982.247-25',
+        password: 'frevo2026',
+      }),
+    );
   });
 
   it('não fala em link: o e-mail traz um código', () => {

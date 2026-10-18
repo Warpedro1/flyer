@@ -80,7 +80,7 @@ export default function ProfilePage() {
             </div>
             <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
               <dt className="text-xs text-gray-500">Celular</dt>
-              <dd className="font-mono text-sm text-gray-900">{identity.phone_masked}</dd>
+              <dd className="font-mono text-sm text-gray-900">{identity.phone_masked ?? 'Não informado'}</dd>
             </div>
           </dl>
         )}

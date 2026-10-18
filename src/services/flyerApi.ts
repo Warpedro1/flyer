@@ -285,7 +285,8 @@ export interface SignUpRequest {
   name: string;
   email: string;
   cpf: string;
-  phone: string;
+  /** Opcional (Warpedro1/flyer-back#29). */
+  phone?: string | null;
   password: string;
 }
 
@@ -323,7 +324,7 @@ export async function getProfileStatus(): Promise<ProfileStatus> {
 }
 
 /** Completa o cadastro (contas Google, no 1.º acesso). */
-export async function completeProfileIdentity(req: { cpf: string; phone: string }): Promise<void> {
+export async function completeProfileIdentity(req: { cpf: string; phone?: string | null }): Promise<void> {
   await apiClient.put('/auth/profile/identity', req);
 }
 
