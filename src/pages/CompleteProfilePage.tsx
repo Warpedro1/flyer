@@ -13,7 +13,7 @@ import { completeProfileIdentity } from '../services/flyerApi.ts';
 import { formatApiError } from '../utils/apiError.ts';
 import { formatCpfInput, formatPhoneInput, identityProblems } from '../utils/brDocuments.ts';
 
-/** 1.º acesso de uma conta sem CPF e celular (Google): completar antes de usar a app. */
+/** 1.º acesso de uma conta sem CPF (Google): completar antes de usar o app. O celular é opcional. */
 export default function CompleteProfilePage() {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
@@ -42,7 +42,7 @@ export default function CompleteProfilePage() {
     if (found.length > 0) return;
     setBusy(true);
     try {
-      await completeProfileIdentity({ cpf, phone });
+      await completeProfileIdentity({ cpf, ...(phone.trim() ? { phone } : {}) });
       void navigate('/', { replace: true });
     } catch (err) {
       setError(formatApiError(err));
@@ -58,7 +58,7 @@ export default function CompleteProfilePage() {
   return (
     <AuthShell
       title="Complete seu cadastro"
-      subtitle="Para usar o Flyer, precisamos do seu CPF e do seu celular. Só você vê esses dados."
+      subtitle="Para usar o Flyer, precisamos do seu CPF. O celular é opcional. Só você vê esses dados."
     >
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
         {error && <AuthMessage tone="error">{error}</AuthMessage>}
@@ -80,14 +80,13 @@ export default function CompleteProfilePage() {
         </div>
         <div>
           <label htmlFor="phone" className={authLabel}>
-            Celular
+            Celular <span className="font-normal text-gray-400">(opcional)</span>
           </label>
           <input
             id="phone"
             type="tel"
             inputMode="numeric"
             autoComplete="tel-national"
-            required
             placeholder="(81) 91234-5678"
             className={authInput}
             value={phone}

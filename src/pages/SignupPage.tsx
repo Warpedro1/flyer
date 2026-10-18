@@ -43,7 +43,13 @@ export default function SignupPage() {
     const address = email.trim();
     try {
       // Pelo backend: valida e diz se o e-mail, o CPF ou o celular já têm conta.
-      const { ticket } = await signUpWithEmail({ name: name.trim(), email: address, cpf, phone, password });
+      const { ticket } = await signUpWithEmail({
+        name: name.trim(),
+        email: address,
+        cpf,
+        ...(phone.trim() ? { phone } : {}),
+        password,
+      });
       // O código do e-mail só ativa a conta neste navegador (decisões 2026-10-14).
       saveSignupTicket({ ticket, email: address.toLowerCase() });
     } catch (err) {
@@ -112,14 +118,13 @@ export default function SignupPage() {
         </div>
         <div>
           <label htmlFor="phone" className={authLabel}>
-            Celular
+            Celular <span className="font-normal text-gray-400">(opcional)</span>
           </label>
           <input
             id="phone"
             type="tel"
             inputMode="numeric"
             autoComplete="tel-national"
-            required
             placeholder="(81) 91234-5678"
             className={authInput}
             value={phone}

@@ -47,6 +47,7 @@ export function formatPhoneInput(value: string): string {
 export function identityProblems(cpf: string, phone: string): string[] {
   const problems: string[] = [];
   if (!isValidCpf(cpf)) problems.push('CPF inválido');
-  if (!isValidMobile(phone)) problems.push('Celular inválido: DDD + número com 9 dígitos');
+  // O celular é opcional (Warpedro1/flyer-back#29); se vier, continua validado.
+  if (phone.trim() && !isValidMobile(phone)) problems.push('Celular inválido: DDD + número com 9 dígitos');
   return problems;
 }

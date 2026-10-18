@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatCpfInput, formatPhoneInput, isValidCpf, isValidMobile } from './brDocuments.ts';
+import { formatCpfInput, formatPhoneInput, identityProblems, isValidCpf, isValidMobile } from './brDocuments.ts';
 
 describe('CPF', () => {
   it('valida os dígitos verificadores', () => {
@@ -33,5 +33,19 @@ describe('celular', () => {
     expect(formatPhoneInput('819')).toBe('(81) 9');
     expect(formatPhoneInput('81912345678')).toBe('(81) 91234-5678');
     expect(formatPhoneInput('8191234567899')).toBe('(81) 91234-5678');
+  });
+});
+
+describe('identityProblems (Warpedro1/flyer-back#29)', () => {
+  it('o celular é opcional, mas o CPF não', () => {
+    expect(identityProblems('529.982.247-25', '')).toEqual([]);
+    expect(identityProblems('529.982.247-25', '   ')).toEqual([]);
+    expect(identityProblems('', '')).toEqual(['CPF inválido']);
+  });
+
+  it('um celular informado continua validado', () => {
+    expect(identityProblems('529.982.247-25', '(81) 3123-4567')).toEqual([
+      'Celular inválido: DDD + número com 9 dígitos',
+    ]);
   });
 });
