@@ -326,11 +326,20 @@ export interface ProfileStatus {
   pending?: boolean;
   cpf_masked: string | null;
   phone_masked: string | null;
+  /** Introdução (Warpedro1/flyer#23): já terminou ou pulou o tour. */
+  intro_seen: boolean;
+  /** Já fez o onboarding do chat: o fim do tour leva à descoberta, não ao chat. */
+  onboarded: boolean;
 }
 
 export async function getProfileStatus(): Promise<ProfileStatus> {
   const { data } = await apiClient.get<ProfileStatus>('/auth/profile/status');
   return data;
+}
+
+/** A introdução foi terminada ou pulada: não aparece de novo em nenhum aparelho. */
+export async function markIntroSeen(): Promise<void> {
+  await apiClient.post('/auth/profile/intro-seen');
 }
 
 /** Completa o cadastro (contas Google, no 1.º acesso). */

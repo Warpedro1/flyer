@@ -131,6 +131,7 @@ export default function DiscoverPage() {
         <div className="flex w-full flex-wrap items-center gap-3 md:w-auto">
           <button
             type="button"
+            data-tour="my-events"
             onClick={() => navigate('/events')}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 hover:text-red-600 md:flex-none"
           >
@@ -139,6 +140,7 @@ export default function DiscoverPage() {
           </button>
           <button
             type="button"
+            data-tour="map"
             onClick={() => navigate('/map')}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 hover:text-red-600 md:flex-none"
           >
@@ -147,6 +149,7 @@ export default function DiscoverPage() {
           </button>
           <button
             type="button"
+            data-tour="create-event"
             onClick={() => navigate('/events/new')}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 font-semibold text-white shadow-md shadow-red-200 transition-colors hover:bg-red-700 md:flex-none"
           >

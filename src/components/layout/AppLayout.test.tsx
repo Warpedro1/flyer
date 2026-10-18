@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { User } from '@supabase/supabase-js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -35,7 +36,8 @@ const getEmailCodeStatus = vi.hoisted(() => vi.fn());
 const getProfileStatus = vi.hoisted(() =>
   vi.fn().mockResolvedValue({ complete: true, cpf_masked: null, phone_masked: null }),
 );
-vi.mock('../../services/flyerApi.ts', () => ({ getEmailCodeStatus, getProfileStatus }));
+const markIntroSeen = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock('../../services/flyerApi.ts', () => ({ getEmailCodeStatus, getProfileStatus, markIntroSeen }));
 
 function renderAppWithChild(childText: string) {
   return render(
@@ -171,5 +173,112 @@ describe('AppLayout — código do login por e-mail', () => {
     renderWithCodeRoute();
 
     expect(await screen.findByText('Código do cadastro')).toBeInTheDocument();
+  });
+});
+
+
+describe('AppLayout — introdução do 1.º login (Warpedro1/flyer#23)', () => {
+  const status = (intro: { intro_seen?: boolean; onboarded?: boolean }) => ({
+    complete: true,
+    cpf_masked: null,
+    phone_masked: null,
+    ...intro,
+  });
+
+  function renderAt(entry: string | { pathname: string; state: unknown } = '/') {
+    return render(
+      <MemoryRouter initialEntries={[entry]}>
+        <Routes>
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<p>Início</p>} />
+            <Route path="/chat" element={<p>Onboarding do chat</p>} />
+            <Route path="/profile" element={<p>Tela do perfil</p>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+  }
+
+  beforeEach(() => {
+    mockUseAuth.mockReturnValue({
+      user: testUser,
+      session: null,
+      loading: false,
+      signInWithGoogle: vi.fn(),
+      signOut: vi.fn().mockResolvedValue(undefined),
+    });
+    markIntroSeen.mockReset().mockResolvedValue(undefined);
+  });
+
+  it('no 1.º login, mostra a introdução depois das guardas da conta', async () => {
+    getProfileStatus.mockResolvedValue(status({ intro_seen: false, onboarded: false }));
+
+    renderAt();
+
+    expect(await screen.findByRole('dialog', { name: 'Descobrir' })).toBeInTheDocument();
+  });
+
+  it('a introdução começa no Descobrir, mesmo que o 1.º acesso seja noutra página', async () => {
+    getProfileStatus.mockResolvedValue(status({ intro_seen: false, onboarded: false }));
+
+    renderAt('/profile');
+
+    expect(await screen.findByRole('dialog', { name: 'Descobrir' })).toBeInTheDocument();
+    expect(screen.getByText('Início')).toBeInTheDocument();
+  });
+
+  it('quem já viu (ou uma conta antiga) não vê de novo', async () => {
+    getProfileStatus.mockResolvedValue(status({ intro_seen: true, onboarded: true }));
+
+    renderAt();
+
+    expect(await screen.findByText('Início')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('pular grava e leva ao onboarding do chat', async () => {
+    const user = userEvent.setup();
+    getProfileStatus.mockResolvedValue(status({ intro_seen: false, onboarded: false }));
+    renderAt();
+
+    await user.click(await screen.findByRole('button', { name: 'Pular' }));
+
+    expect(markIntroSeen).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText('Onboarding do chat')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('quem já fez o onboarding do chat fica na descoberta', async () => {
+    const user = userEvent.setup();
+    getProfileStatus.mockResolvedValue(status({ intro_seen: false, onboarded: true }));
+    renderAt();
+
+    await user.click(await screen.findByRole('button', { name: 'Pular' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.getByText('Início')).toBeInTheDocument();
+  });
+
+  it('"Ver introdução de novo" mostra o tour sem gravar nada', async () => {
+    const user = userEvent.setup();
+    getProfileStatus.mockResolvedValue(status({ intro_seen: true, onboarded: true }));
+    renderAt({ pathname: '/', state: { replayIntro: true } });
+
+    await user.click(await screen.findByRole('button', { name: 'Pular' }));
+
+    expect(markIntroSeen).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('se gravar falhar, o tour não volta nesta sessão e o app segue', async () => {
+    const user = userEvent.setup();
+    getProfileStatus.mockResolvedValue(status({ intro_seen: false, onboarded: false }));
+    markIntroSeen.mockRejectedValue(new Error('rede'));
+    renderAt();
+
+    await user.click(await screen.findByRole('button', { name: 'Pular' }));
+
+    expect(await screen.findByText('Onboarding do chat')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
