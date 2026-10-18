@@ -240,6 +240,14 @@ export async function recallAttendee(
   return data;
 }
 
+/** Pula a vez de quem foi chamado e não vai aparecer (Warpedro1/flyer-back#5): vira `no_show`. */
+export async function skipAttendee(eventId: string, rsvpId: string): Promise<RsvpRead> {
+  const { data } = await apiClient.post<RsvpRead>(
+    `/events/${encodeURIComponent(eventId)}/waitlist/${encodeURIComponent(rsvpId)}/skip`,
+  );
+  return data;
+}
+
 export async function scanTicket(
   eventId: string,
   token: string,

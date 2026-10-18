@@ -10,11 +10,13 @@ import EventAttendeesPage from './EventAttendeesPage.tsx';
 const getEventAttendees = vi.hoisted(() => vi.fn());
 const callNextInWaitlist = vi.hoisted(() => vi.fn());
 const recallAttendee = vi.hoisted(() => vi.fn());
+const skipAttendee = vi.hoisted(() => vi.fn());
 
 vi.mock('../services/flyerApi.ts', () => ({
   getEventAttendees,
   callNextInWaitlist,
   recallAttendee,
+  skipAttendee,
 }));
 
 function person(name: string, overrides: Partial<RsvpWithProfile> = {}): RsvpWithProfile {
@@ -61,6 +63,7 @@ describe('EventAttendeesPage', () => {
     getEventAttendees.mockReset();
     callNextInWaitlist.mockReset();
     recallAttendee.mockReset();
+    skipAttendee.mockReset();
   });
 
   afterEach(() => {
@@ -124,6 +127,50 @@ describe('EventAttendeesPage', () => {
     await waitFor(() =>
       expect(recallAttendee).toHaveBeenCalledWith('evt-1', 'rsvp-Caio'),
     );
+  });
+
+  it('pula a vez de quem foi chamado, depois de confirmar (Warpedro1/flyer-back#5)', async () => {
+    const user = userEvent.setup();
+    getEventAttendees.mockResolvedValue(
+      list({ called: [person('Ana', { status: 'called', waitlist_position: null, call_expires_at: '2099-01-01T00:00:00Z' })] }),
+    );
+    skipAttendee.mockResolvedValue(person('Ana', { status: 'no_show', waitlist_position: null }));
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: /pular a vez de ana/i }));
+    expect(skipAttendee).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: /sim, pular/i }));
+
+    await waitFor(() => expect(skipAttendee).toHaveBeenCalledWith('evt-1', 'rsvp-Ana'));
+    await waitFor(() => expect(getEventAttendees).toHaveBeenCalledTimes(2));
+  });
+
+  it('desistir de pular não muda nada', async () => {
+    const user = userEvent.setup();
+    getEventAttendees.mockResolvedValue(
+      list({ called: [person('Ana', { status: 'called', waitlist_position: null, call_expires_at: '2099-01-01T00:00:00Z' })] }),
+    );
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: /pular a vez de ana/i }));
+    await user.click(screen.getByRole('button', { name: /^cancelar$/i }));
+
+    expect(skipAttendee).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /pular a vez de ana/i })).toBeInTheDocument();
+  });
+
+  it('mostra o motivo quando não dá para pular', async () => {
+    const user = userEvent.setup();
+    getEventAttendees.mockResolvedValue(
+      list({ called: [person('Ana', { status: 'called', waitlist_position: null, call_expires_at: '2099-01-01T00:00:00Z' })] }),
+    );
+    skipAttendee.mockRejectedValue(new Error('Só dá para pular a vez de quem já foi chamado.'));
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: /pular a vez de ana/i }));
+    await user.click(screen.getByRole('button', { name: /sim, pular/i }));
+
+    expect(await screen.findByText('Só dá para pular a vez de quem já foi chamado.')).toBeInTheDocument();
   });
 
   it('refresca sozinha — é o polling que faz a fila andar no backend', async () => {

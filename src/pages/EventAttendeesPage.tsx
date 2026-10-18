@@ -7,6 +7,7 @@ import {
   callNextInWaitlist,
   getEventAttendees,
   recallAttendee,
+  skipAttendee,
 } from '../services/flyerApi.ts';
 import type { AttendeeListRead, RsvpWithProfile } from '../types/index.ts';
 import { formatApiError, isNotFoundError } from '../utils/apiError.ts';
@@ -20,14 +21,65 @@ import { BackButton } from '../components/navigation/BackButton.tsx';
  */
 const POLL_MS = 15_000;
 
-function CalledRow({ entry }: { entry: RsvpWithProfile }) {
+function CalledRow({
+  entry,
+  busy,
+  onSkip,
+}: {
+  entry: RsvpWithProfile;
+  busy: boolean;
+  onSkip: () => void;
+}) {
   const countdown = useCountdown(entry.call_expires_at);
+  const [confirming, setConfirming] = useState(false);
+  const name = entry.profile.name ?? 'Sem nome';
   return (
-    <li className="flex items-center justify-between rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
-      <span className="font-medium text-red-900">{entry.profile.name ?? 'Sem nome'}</span>
-      <span className="font-mono text-sm font-bold text-red-700">
-        {countdown.expired ? 'prazo esgotado' : countdown.label}
-      </span>
+    <li className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="font-medium text-red-900">{name}</span>
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-sm font-bold text-red-700">
+            {countdown.expired ? 'prazo esgotado' : countdown.label}
+          </span>
+          {!confirming && (
+            <button
+              type="button"
+              onClick={() => setConfirming(true)}
+              disabled={busy}
+              aria-label={`Pular a vez de ${name}`}
+              className="rounded-xl border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-700 transition hover:border-red-400 disabled:opacity-50"
+            >
+              Pular a vez
+            </button>
+          )}
+        </div>
+      </div>
+      {/* Pular a vez de quem foi chamado e não vai aparecer (Warpedro1/flyer-back#5). */}
+      {confirming && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white p-3 text-sm text-gray-700">
+          <span>Pular a vez de {name}? O próximo da fila é chamado.</span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              className="rounded-xl border border-gray-200 px-3 py-1.5 font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setConfirming(false);
+                onSkip();
+              }}
+              disabled={busy}
+              className="rounded-xl bg-red-600 px-3 py-1.5 font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+            >
+              Sim, pular
+            </button>
+          </div>
+        </div>
+      )}
     </li>
   );
 }
@@ -110,6 +162,19 @@ export default function EventAttendeesPage() {
     setBusy(true);
     try {
       await callNextInWaitlist(id);
+      await load();
+    } catch (err) {
+      setError(formatApiError(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleSkip = async (rsvpId: string) => {
+    if (!id) return;
+    setBusy(true);
+    try {
+      await skipAttendee(id, rsvpId);
       await load();
     } catch (err) {
       setError(formatApiError(err));
@@ -208,7 +273,12 @@ export default function EventAttendeesPage() {
           {data.called.length > 0 && (
             <Section title="Chamado agora" icon={<BellRing className="h-4 w-4" />}>
               {data.called.map((entry) => (
-                <CalledRow key={entry.id} entry={entry} />
+                <CalledRow
+                  key={entry.id}
+                  entry={entry}
+                  busy={busy}
+                  onSkip={() => void handleSkip(entry.id)}
+                />
               ))}
             </Section>
           )}
