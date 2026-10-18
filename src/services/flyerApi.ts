@@ -18,6 +18,8 @@ import type {
   EventRead,
   FollowAction,
   FollowCreatedResponse,
+  MyEventsRole,
+  MyEventsWhen,
   OkResponse,
   PendingFollowOut,
   PlanRead,
@@ -156,8 +158,16 @@ export async function getPlaceEvents(placeId: string): Promise<EventRead[]> {
   return data;
 }
 
-export async function getMyEvents(): Promise<EventRead[]> {
-  const { data } = await apiClient.get<EventRead[]>('/events/mine');
+/** Filtros de "Meus eventos" (Warpedro1/flyer-back#40). Sem nenhum: o que você criou. */
+export interface MyEventsQuery {
+  role?: MyEventsRole;
+  when?: MyEventsWhen;
+  limit?: number;
+  offset?: number;
+}
+
+export async function getMyEvents(query: MyEventsQuery = {}): Promise<EventRead[]> {
+  const { data } = await apiClient.get<EventRead[]>('/events/mine', { params: query });
   return data;
 }
 

@@ -21,6 +21,7 @@ export function makeEvent(overrides: Partial<EventRead> = {}): EventRead {
     waitlist_enabled: true,
     call_ttl_minutes: 10,
     capacity_state: null,
+    my_rsvp: null,
     is_boosted: false,
     boost_expires_at: null,
     created_at: null,

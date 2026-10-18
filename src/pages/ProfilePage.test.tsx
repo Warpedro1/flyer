@@ -63,4 +63,20 @@ describe('ProfilePage', () => {
 
     expect(await screen.findByText('Não informado')).toBeInTheDocument();
   });
+
+  it('o troféu leva ao evento de onde veio (Warpedro1/flyer-back#40)', async () => {
+    getUserTrophies.mockResolvedValue([
+      { id: 't1', template_id: 'tpl1', name: 'Presença: Frevo', description: null, icon_url: null, acquired_at: null, event_id: 'e1' },
+      { id: 't2', template_id: 'tpl2', name: 'Troféu antigo', description: null, icon_url: null, acquired_at: null, event_id: null },
+    ]);
+    render(
+      <MemoryRouter>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+
+    const link = await screen.findByRole('link', { name: 'Ver o evento de Presença: Frevo' });
+    expect(link).toHaveAttribute('href', '/events/e1');
+    expect(screen.getByText('Troféu antigo').closest('a')).toBeNull();
+  });
 });
