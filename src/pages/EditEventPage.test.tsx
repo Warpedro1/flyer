@@ -9,12 +9,19 @@ import EditEventPage from './EditEventPage.tsx';
 
 const getEventForEdit = vi.hoisted(() => vi.fn());
 const updateEvent = vi.hoisted(() => vi.fn());
+const describeEvent = vi.hoisted(() => vi.fn());
 const getEventById = vi.hoisted(() => vi.fn());
 const discoverEvents = vi.hoisted(() => vi.fn());
 const uploadEventMedia = vi.hoisted(() => vi.fn());
 const uploadTrophyIcon = vi.hoisted(() => vi.fn());
 
-vi.mock('../services/flyerApi.ts', () => ({ getEventForEdit, updateEvent, getEventById, discoverEvents }));
+vi.mock('../services/flyerApi.ts', () => ({
+  getEventForEdit,
+  updateEvent,
+  getEventById,
+  discoverEvents,
+  describeEvent,
+}));
 vi.mock('../lib/supabase.ts', () => ({ supabase: {} }));
 vi.mock('../services/storage.ts', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../services/storage.ts')>()),

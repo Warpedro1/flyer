@@ -1,8 +1,9 @@
-import { Plus, Save, Trash2, UploadCloud } from 'lucide-react';
+import { Plus, Save, Sparkles, Trash2, UploadCloud } from 'lucide-react';
 import { type DragEvent, type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '../../hooks/useAuth.ts';
 import { useEffectiveGeo } from '../../hooks/useEffectiveGeo.ts';
+import { describeEvent } from '../../services/flyerApi.ts';
 import { TROPHY_ICON_ACCEPT, uploadEventMedia, uploadTrophyIcon } from '../../services/storage.ts';
 import type {
   EventCategory,
@@ -152,6 +153,35 @@ export function EventForm({
       mounted.current = false;
     };
   }, []);
+
+  // "Melhorar descrição" (flyer-back#22 C): a sugestão só substitui o texto se o criador escolher.
+  const [suggestion, setSuggestion] = useState<string | null>(null);
+  const [describing, setDescribing] = useState(false);
+  const [describeError, setDescribeError] = useState<string | null>(null);
+
+  const handleDescribe = async () => {
+    if (describing) return;
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
+      setDescribeError('Escreva o título antes de pedir uma sugestão.');
+      return;
+    }
+    setDescribing(true);
+    setDescribeError(null);
+    setSuggestion(null);
+    try {
+      const result = await describeEvent({
+        title: trimmedTitle,
+        description: description.trim() || null,
+        category: category || null,
+      });
+      if (mounted.current) setSuggestion(result.description);
+    } catch (err) {
+      if (mounted.current) setDescribeError(formatApiError(err));
+    } finally {
+      if (mounted.current) setDescribing(false);
+    }
+  };
 
   // Recorrência (expandida em várias linhas de evento pelo backend).
   const [recurrenceMode, setRecurrenceMode] = useState<RecurrenceUiMode>('none');
@@ -475,6 +505,52 @@ export function EventForm({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <button
+              type="button"
+              onClick={() => void handleDescribe()}
+              disabled={describing}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+              {describing ? 'Melhorando…' : 'Melhorar descrição'}
+            </button>
+            <span className="text-xs text-gray-500">
+              Sugerimos um texto a partir do que você escreveu. Nada muda sem você escolher.
+            </span>
+          </div>
+          {describeError && (
+            <p className="mt-2 text-sm text-red-600" role="alert">
+              {describeError}
+            </p>
+          )}
+          <div aria-live="polite">
+            {suggestion && (
+              <div className="mt-3 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Sugestão</p>
+                <p className="mt-1 whitespace-pre-line text-sm text-gray-800">{suggestion}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDescription(suggestion);
+                      setSuggestion(null);
+                    }}
+                    className="rounded-xl bg-red-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-700"
+                  >
+                    Usar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSuggestion(null)}
+                    className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                  >
+                    Manter meu texto
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div>

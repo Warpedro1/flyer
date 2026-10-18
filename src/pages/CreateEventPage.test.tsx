@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { server } from '../mocks/server.ts';
 
+import { apiResponseError } from '../test/axiosErrors.ts';
 import { makePlace } from '../test/factories.ts';
 
 import CreateEventPage from './CreateEventPage.tsx';
@@ -14,8 +15,9 @@ const createEvent = vi.hoisted(() => vi.fn());
 const uploadEventMedia = vi.hoisted(() => vi.fn());
 const discoverEvents = vi.hoisted(() => vi.fn());
 const uploadTrophyIcon = vi.hoisted(() => vi.fn());
+const describeEvent = vi.hoisted(() => vi.fn());
 
-vi.mock('../services/flyerApi.ts', () => ({ createEvent, discoverEvents }));
+vi.mock('../services/flyerApi.ts', () => ({ createEvent, discoverEvents, describeEvent }));
 // As constantes (formatos aceites) ficam reais; só os uploads são simulados.
 vi.mock('../lib/supabase.ts', () => ({ supabase: {} }));
 vi.mock('../services/storage.ts', async (importOriginal) => ({
@@ -544,5 +546,124 @@ describe('CreateEventPage (sair durante o envio do ícone)', () => {
     await Promise.resolve();
 
     expect(createObjectURL).not.toHaveBeenCalled();
+  });
+});
+
+describe('CreateEventPage (Melhorar descrição)', () => {
+  beforeEach(() => {
+    describeEvent.mockReset();
+  });
+
+  async function askForSuggestion(user: ReturnType<typeof userEvent.setup>) {
+    await user.type(screen.getByLabelText(/título/i), 'Roda de samba');
+    await user.type(screen.getByLabelText('Descrição'), 'samba no recife antigo');
+    await user.selectOptions(screen.getByLabelText(/categoria/i), 'Música/Show');
+    await user.click(screen.getByRole('button', { name: 'Melhorar descrição' }));
+  }
+
+  it('sugere um texto a partir do que você escreveu e só troca ao clicar em Usar', async () => {
+    const user = userEvent.setup();
+    describeEvent.mockResolvedValue({ description: 'Venha para a roda de samba no Recife Antigo.' });
+
+    renderPage();
+    await askForSuggestion(user);
+
+    expect(await screen.findByText('Venha para a roda de samba no Recife Antigo.')).toBeInTheDocument();
+    expect(describeEvent).toHaveBeenCalledWith({
+      title: 'Roda de samba',
+      description: 'samba no recife antigo',
+      category: 'musica_show',
+    });
+    expect(screen.getByLabelText('Descrição')).toHaveValue('samba no recife antigo');
+
+    await user.click(screen.getByRole('button', { name: 'Usar' }));
+
+    expect(screen.getByLabelText('Descrição')).toHaveValue('Venha para a roda de samba no Recife Antigo.');
+    expect(screen.queryByRole('button', { name: 'Usar' })).not.toBeInTheDocument();
+  });
+
+  it('Manter meu texto descarta a sugestão', async () => {
+    const user = userEvent.setup();
+    describeEvent.mockResolvedValue({ description: 'Texto sugerido.' });
+
+    renderPage();
+    await askForSuggestion(user);
+    await user.click(await screen.findByRole('button', { name: 'Manter meu texto' }));
+
+    expect(screen.queryByText('Texto sugerido.')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Descrição')).toHaveValue('samba no recife antigo');
+  });
+
+  it('mostra "Melhorando…" enquanto espera e não pede duas vezes', async () => {
+    const user = userEvent.setup();
+    describeEvent.mockReturnValue(new Promise(() => {}));
+
+    renderPage();
+    await askForSuggestion(user);
+
+    const button = screen.getByRole('button', { name: 'Melhorando…' });
+    expect(button).toBeDisabled();
+    await user.click(button);
+    expect(describeEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it('sem descrição, pede um texto só com o título', async () => {
+    const user = userEvent.setup();
+    describeEvent.mockResolvedValue({ description: 'Uma noite de forró.' });
+
+    renderPage();
+    await user.type(screen.getByLabelText(/título/i), 'Noite de forró');
+    await user.click(screen.getByRole('button', { name: 'Melhorar descrição' }));
+
+    await screen.findByText('Uma noite de forró.');
+    expect(describeEvent).toHaveBeenCalledWith({ title: 'Noite de forró', description: null, category: null });
+  });
+
+  it('pede o título antes de sugerir', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+    await user.click(screen.getByRole('button', { name: 'Melhorar descrição' }));
+
+    expect(screen.getByText('Escreva o título antes de pedir uma sugestão.')).toBeInTheDocument();
+    expect(describeEvent).not.toHaveBeenCalled();
+  });
+
+  it('mostra a recusa do backend junto do campo', async () => {
+    const user = userEvent.setup();
+    describeEvent.mockRejectedValue(
+      apiResponseError(422, {
+        detail: 'A descrição tem dados de contato. Remova antes de pedir uma sugestão.',
+        code: 'personal_data',
+      }),
+    );
+
+    renderPage();
+    await askForSuggestion(user);
+
+    expect(
+      await screen.findByText('A descrição tem dados de contato. Remova antes de pedir uma sugestão.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Melhorar descrição' })).toBeEnabled();
+  });
+
+  it('não mostra a sugestão depois de a página fechar', async () => {
+    const user = userEvent.setup();
+    let finish: (value: { description: string }) => void = () => {};
+    describeEvent.mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { unmount } = renderPage();
+    await askForSuggestion(user);
+    unmount();
+    finish({ description: 'Tarde demais.' });
+    await Promise.resolve();
+
+    expect(errors).not.toHaveBeenCalled();
+    errors.mockRestore();
   });
 });

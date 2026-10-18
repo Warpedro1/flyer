@@ -313,6 +313,17 @@ export interface EventCreate extends EventFields {
 /** Editar uma data do evento: tudo menos a recorrência. */
 export type EventUpdate = EventFields;
 
+/** POST /events/describe: o botão "Melhorar descrição" (nada é salvo). */
+export interface EventDescribeRequest {
+  title: string;
+  description?: string | null;
+  category?: EventCategory | null;
+}
+
+export interface EventDescribeRead {
+  description: string;
+}
+
 export interface EventMediaEdit {
   /** Caminho no bucket (o que se volta a enviar ao gravar). */
   media_url: string;
