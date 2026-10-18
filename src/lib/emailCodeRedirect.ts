@@ -31,3 +31,30 @@ export function redirectIfEmailCodeRequired(
   if (currentPath !== target) go(target);
   return true;
 }
+
+/** `code` do backend quando o pedido chegou sem token (Warpedro1/flyer-back#42). */
+export const NOT_AUTHENTICATED = 'not_authenticated';
+export const LOGIN_PATH = '/login';
+const ENTRY_PATHS = new Set([
+  LOGIN_PATH,
+  EMAIL_CODE_PATH,
+  '/signup',
+  SIGNUP_CODE_PATH,
+  '/forgot-password',
+  '/reset-password',
+]);
+
+/**
+ * Um pedido feito sem sessão (ela acabou entre dois pedidos) vai para o login. Só o
+ * 401 `not_authenticated`: um token recusado pelo backend não tira ninguém da tela.
+ */
+export function redirectIfNotAuthenticated(
+  error: unknown,
+  currentPath: string,
+  go: (path: string) => void,
+): boolean {
+  const response = (error as { response?: { status?: number; data?: { code?: unknown } } } | null)?.response;
+  if (response?.status !== 401 || response.data?.code !== NOT_AUTHENTICATED) return false;
+  if (!ENTRY_PATHS.has(currentPath)) go(LOGIN_PATH);
+  return true;
+}
