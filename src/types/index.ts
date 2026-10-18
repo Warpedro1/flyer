@@ -104,6 +104,8 @@ export interface EventRead {
   call_ttl_minutes: number;
   /** Só vem preenchido em GET /events/:id, não na descoberta. */
   capacity_state: EventCapacityRead | null;
+  /** A sua inscrição, só em "Meus eventos" (GET /events/mine, Warpedro1/flyer-back#40). */
+  my_rsvp: MyRsvpRead | null;
   is_boosted: boolean;
   boost_expires_at: string | null;
   created_at: string | null;
@@ -166,6 +168,8 @@ export interface TrophyRead {
   description: string | null;
   icon_url: string | null;
   acquired_at: string | null;
+  /** O evento (ou lugar) de onde veio o troféu; o perfil liga até ele. */
+  event_id: string | null;
 }
 
 export interface FollowRequest {
@@ -347,6 +351,17 @@ export interface EventEditRead {
 }
 
 /** Espelha o enum Postgres `rsvp_status`. */
+/** A sua inscrição num evento de "Meus eventos" (espelha `MyRsvpRead`). */
+export interface MyRsvpRead {
+  status: RsvpStatus;
+  waitlist_position: number | null;
+}
+
+/** "Meus eventos": o que você criou, aquilo em que vai, ou os dois. */
+export type MyEventsRole = 'created' | 'going' | 'all';
+/** Corte no fim do evento. */
+export type MyEventsWhen = 'upcoming' | 'past';
+
 export type RsvpStatus =
   | 'confirmed'
   | 'waitlisted'

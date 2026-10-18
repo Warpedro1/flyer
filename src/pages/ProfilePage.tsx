@@ -1,6 +1,6 @@
 import { CreditCard, LogOut, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { TrophyIcon } from '../components/ui/TrophyIcon.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
@@ -135,22 +135,38 @@ export default function ProfilePage() {
         )}
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          {trophies.map((t) => (
-            <div
-              key={t.id}
-              className="flex flex-col items-center rounded-2xl border border-gray-100 bg-white p-4 text-center shadow-sm"
-            >
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-red-50 to-white">
-                <TrophyIcon iconUrl={t.icon_url} name={t.name} />
+          {trophies.map((t) => {
+            const content = (
+              <>
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-red-50 to-white">
+                  <TrophyIcon iconUrl={t.icon_url} name={t.name} />
+                </div>
+                <p className="mt-2 text-sm font-semibold text-gray-900">{t.name}</p>
+                {t.acquired_at && (
+                  <p className="text-xs text-gray-400">
+                    {new Date(t.acquired_at).toLocaleDateString('pt-BR')}
+                  </p>
+                )}
+              </>
+            );
+            const card =
+              'flex flex-col items-center rounded-2xl border border-gray-100 bg-white p-4 text-center shadow-sm';
+            // O troféu leva ao evento ou lugar de onde veio (Warpedro1/flyer-back#40).
+            return t.event_id ? (
+              <Link
+                key={t.id}
+                to={`/events/${t.event_id}`}
+                aria-label={`Ver o evento de ${t.name}`}
+                className={`${card} transition hover:-translate-y-0.5 hover:border-red-200 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600`}
+              >
+                {content}
+              </Link>
+            ) : (
+              <div key={t.id} className={card}>
+                {content}
               </div>
-              <p className="mt-2 text-sm font-semibold text-gray-900">{t.name}</p>
-              {t.acquired_at && (
-                <p className="text-xs text-gray-400">
-                  {new Date(t.acquired_at).toLocaleDateString('pt-BR')}
-                </p>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

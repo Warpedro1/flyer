@@ -23,6 +23,7 @@ const OK: ScanResult = {
     description: null,
     icon_url: null,
     acquired_at: null,
+    event_id: null,
   },
   location_checked: true,
 };

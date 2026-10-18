@@ -43,6 +43,7 @@ function event(id: string, title: string): EventRead {
     waitlist_enabled: true,
     call_ttl_minutes: 10,
     capacity_state: null,
+    my_rsvp: null,
     is_boosted: false,
     boost_expires_at: null,
     created_at: null,
