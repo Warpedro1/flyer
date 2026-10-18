@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ProfilePage from './ProfilePage.tsx';
@@ -78,5 +78,25 @@ describe('ProfilePage', () => {
     const link = await screen.findByRole('link', { name: 'Ver o evento de Presença: Frevo' });
     expect(link).toHaveAttribute('href', '/events/e1');
     expect(screen.getByText('Troféu antigo').closest('a')).toBeNull();
+  });
+
+  it('dá para ver a introdução de novo (Warpedro1/flyer#23)', async () => {
+    const user = userEvent.setup();
+    function Home() {
+      const location = useLocation();
+      return <p>Início {JSON.stringify(location.state)}</p>;
+    }
+    render(
+      <MemoryRouter initialEntries={['/profile']}>
+        <Routes>
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/" element={<Home />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: /ver introdução de novo/i }));
+
+    expect(screen.getByText('Início {"replayIntro":true}')).toBeInTheDocument();
   });
 });

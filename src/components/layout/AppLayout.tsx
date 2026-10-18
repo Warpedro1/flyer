@@ -20,8 +20,10 @@ import {
 import { useAppVersionCheck } from '../../hooks/useAppVersionCheck.ts';
 import { useAuth } from '../../hooks/useAuth.ts';
 import { useAccountGate } from '../../hooks/useAccountGate.ts';
+import { markIntroSeen } from '../../services/flyerApi.ts';
 import { isImmersivePath } from '../../utils/immersivePaths.ts';
 import { ErrorBoundary } from '../errors/ErrorBoundary.tsx';
+import { IntroTour } from '../intro/IntroTour.tsx';
 import { WingHeartLogo } from './WingHeartLogo.tsx';
 
 function SidebarLink({
@@ -32,6 +34,7 @@ function SidebarLink({
   badge,
   collapsed,
   avatarUrl,
+  tour,
 }: {
   to: string;
   end?: boolean;
@@ -40,11 +43,14 @@ function SidebarLink({
   badge?: string;
   collapsed: boolean;
   avatarUrl?: string;
+  /** Alvo da introdução (`data-tour`). */
+  tour?: string;
 }) {
   return (
     <NavLink
       to={to}
       end={end}
+      data-tour={tour}
       className={({ isActive }) =>
         `flex items-center w-full py-3 rounded-xl transition-colors font-medium ${
           collapsed ? 'justify-center px-0' : 'px-4 gap-3'
@@ -84,12 +90,15 @@ function MobileNavButton({
   icon,
   label,
   avatarUrl,
+  tour,
 }: {
   to: string;
   end?: boolean;
   icon?: React.ReactNode;
   label: string;
   avatarUrl?: string;
+  /** Alvo da introdução (`data-tour`). */
+  tour?: string;
 }) {
   const match = useMatch({ path: to, end: end ?? false });
   const isActive = !!match;
@@ -98,6 +107,7 @@ function MobileNavButton({
     <NavLink
       to={to}
       end={end}
+      data-tour={tour}
       className={`flex min-w-0 flex-1 flex-col items-center gap-1 py-1 ${
         isActive ? 'text-red-600' : 'text-gray-400 hover:text-gray-600'
       }`}
@@ -123,12 +133,24 @@ const DEFAULT_AVATAR =
 
 export default function AppLayout() {
   const { user, session, loading, signOut } = useAuth();
-  const gate = useAccountGate(session?.access_token, user?.id);
+  const { gate, intro } = useAccountGate(session?.access_token, user?.id);
   // Recarrega uma aba antiga quando volta ao ecrã depois de um deploy.
   useAppVersionCheck();
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
+  // Introdução do 1.º login (Warpedro1/flyer#23), ou "Ver introdução de novo" no Perfil.
+  const [introClosed, setIntroClosed] = useState(false);
+  const replayIntro = (location.state as { replayIntro?: unknown } | null)?.replayIntro === true;
+  const showIntro = gate === 'ok' && (replayIntro || (intro?.seen === false && !introClosed));
+
+  const finishIntro = () => {
+    setIntroClosed(true);
+    // Uma falha ao gravar não volta a abrir o tour nesta sessão nem trava o app.
+    if (!replayIntro) markIntroSeen().catch(() => undefined);
+    // Quem ainda não fez o onboarding do chat vai fazê-lo; quem fez fica na descoberta.
+    navigate(intro?.onboarded ? '/' : '/chat', { replace: true });
+  };
 
   if (loading || (user && gate === 'checking')) {
     return (
@@ -154,6 +176,10 @@ export default function AppLayout() {
   }
   if (gate === 'needs_profile') {
     return <Navigate to="/complete-profile" replace />;
+  }
+  // O tour aponta os botões do Descobrir (mapa, criar, meus eventos): começa lá.
+  if (showIntro && location.pathname !== '/') {
+    return <Navigate to="/" replace state={location.state} />;
   }
 
   const immersive = isImmersivePath(location.pathname);
@@ -204,30 +230,35 @@ export default function AppLayout() {
             end
             icon={<Compass />}
             label="Descobrir"
+            tour="discover"
             collapsed={collapsed}
           />
           <SidebarLink
             to="/events"
             icon={<Calendar />}
             label="Meus eventos"
+            tour="my-events"
             collapsed={collapsed}
           />
           <SidebarLink
             to="/notifications"
             icon={<Bell />}
             label="Notificações"
+            tour="notifications"
             collapsed={collapsed}
           />
           <SidebarLink
             to="/chat"
             icon={<MessageCircle />}
             label="Chat IA"
+            tour="chat"
             collapsed={collapsed}
           />
           <SidebarLink
             to="/profile"
             avatarUrl={avatarUrl}
             label="Perfil"
+            tour="profile"
             collapsed={collapsed}
           />
         </nav>
@@ -264,6 +295,7 @@ export default function AppLayout() {
               onClick={() => navigate('/notifications')}
               className="relative p-2 text-gray-400 transition-colors hover:text-gray-600"
               aria-label="Notificações"
+              data-tour="notifications"
             >
               <Bell className="h-6 w-6" />
               <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-red-600" />
@@ -290,20 +322,24 @@ export default function AppLayout() {
               end
               icon={<Compass className="h-6 w-6" />}
               label="Descobrir"
+              tour="discover"
             />
             <MobileNavButton
               to="/chat"
               icon={<MessageCircle className="w-6 h-6" />}
               label="Chat IA"
+              tour="chat"
             />
             <MobileNavButton
               to="/profile"
               avatarUrl={avatarUrl}
               label="Perfil"
+              tour="profile"
             />
           </nav>
         )}
       </div>
+      {showIntro && <IntroTour onFinish={finishIntro} />}
     </div>
   );
 }

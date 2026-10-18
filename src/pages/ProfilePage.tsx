@@ -104,6 +104,15 @@ export default function ProfilePage() {
           </button>
         </div>
 
+        {/* A introdução do 1.º login, de novo e sem gravar nada (Warpedro1/flyer#23). */}
+        <button
+          type="button"
+          onClick={() => navigate('/', { state: { replayIntro: true } })}
+          className="mt-3 text-sm font-semibold text-red-600 hover:underline"
+        >
+          Ver introdução de novo
+        </button>
+
         {/* No desktop o Sair está na barra lateral; no telemóvel ela não existe. */}
         <button
           type="button"

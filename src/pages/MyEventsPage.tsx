@@ -137,6 +137,7 @@ export default function MyEventsPage() {
         </div>
         <button
           type="button"
+          data-tour="create-event"
           onClick={() => navigate('/events/new')}
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 font-semibold text-white shadow-md shadow-red-200 transition hover:bg-red-700"
         >
