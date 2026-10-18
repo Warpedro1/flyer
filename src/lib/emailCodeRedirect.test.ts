@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { redirectIfEmailCodeRequired } from './emailCodeRedirect.ts';
+import { redirectIfEmailCodeRequired, redirectIfNotAuthenticated } from './emailCodeRedirect.ts';
 
 function error(status: number, detail: unknown) {
   return { response: { status, data: { detail } } };
@@ -55,5 +55,40 @@ describe('signup_pending', () => {
 
     expect(redirectIfEmailCodeRequired(error(403, 'signup_pending'), '/events', go)).toBe(true);
     expect(go).toHaveBeenCalledWith('/signup/code');
+  });
+});
+
+describe('not_authenticated (Warpedro1/flyer-back#42)', () => {
+  function unauthenticated() {
+    return {
+      response: { status: 401, data: { detail: 'Entre na sua conta para continuar.', code: 'not_authenticated' } },
+    };
+  }
+
+  it('um pedido sem sessão leva ao login', () => {
+    const go = vi.fn();
+
+    expect(redirectIfNotAuthenticated(unauthenticated(), '/events', go)).toBe(true);
+    expect(go).toHaveBeenCalledWith('/login');
+  });
+
+  it('não sai das telas de entrada', () => {
+    const go = vi.fn();
+
+    for (const path of ['/login', '/login/code', '/signup', '/signup/code', '/forgot-password', '/reset-password']) {
+      redirectIfNotAuthenticated(unauthenticated(), path, go);
+    }
+
+    expect(go).not.toHaveBeenCalled();
+  });
+
+  it('outros 401 (token recusado pelo backend) não mudam de tela', () => {
+    const go = vi.fn();
+
+    expect(
+      redirectIfNotAuthenticated({ response: { status: 401, data: { detail: 'Token inválido.' } } }, '/', go),
+    ).toBe(false);
+    expect(redirectIfNotAuthenticated(new Error('rede'), '/', go)).toBe(false);
+    expect(go).not.toHaveBeenCalled();
   });
 });
