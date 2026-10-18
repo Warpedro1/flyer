@@ -84,6 +84,14 @@ Key cross-cutting patterns:
 - **Types.** `types/index.ts` must mirror the backend Pydantic schemas exactly. Decimal fields (money, ratings) are typed as `string | null` on the UI side.
 - **Styling.** Tailwind CSS v4 only (via `@tailwindcss/vite`). Do not add Bootstrap, MUI, or any prebuilt component library. Accent color is `red-600`; prefer `rounded-2xl`/`rounded-3xl`. Root container is `h-screen overflow-hidden`; only `<main>` scrolls (`overflow-y-auto`).
 
+### Design skills and browser (Warpedro1/flyer-back#39)
+- Project skills in `.claude/skills/`, copied from upstream (commits in the PR that added them):
+  - `frontend-design`: visual direction;
+  - `ui-ux-pro-max`: tokens, palette and typography; run its `search.py` with `--stack react` and never take the `shadcn` stack;
+  - `web-design-guidelines`: accessibility/UX audit (fetches Vercel's guidelines when it runs).
+- Their advice never overrides this file: Tailwind only, no component libraries, `red-600` accent, pt-BR copy.
+- `.mcp.json` runs the Playwright MCP pinned to `@playwright/mcp@0.0.83` against the cloud sandbox's Chromium 141 (`/opt/pw-browsers/chromium`, `--no-sandbox`). Locally, override `--executable-path` in your user MCP config. Bump the version on purpose, after a smoke test (open `/login`, take a screenshot); `0.0.41` matches that Chromium's Playwright 1.56 if a newer one stops working. Output goes to `.playwright-mcp/` (ignored).
+
 ### Frontend conventions
 - **TDD:** write/update the `*.test.tsx` (or `*.test.ts`) file before changing a component or hook.
 - Tests use Vitest + `@testing-library/react` + `userEvent`. Test behavior, not internal state. **Never make real API calls** — intercept with MSW (`src/mocks/handlers.ts`, `src/mocks/server.ts`).
