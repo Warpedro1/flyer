@@ -116,6 +116,8 @@ export interface EventRead {
   /** Itens importados: página na fonte (Google Maps, Sympla) e imagem pública. */
   source_url: string | null;
   cover_url: string | null;
+  /** Oculto pela moderação (flyer-back#22 A): só quem criou recebe um evento assim. */
+  moderation_blocked: boolean;
 }
 
 export interface DiscoverRequest {
