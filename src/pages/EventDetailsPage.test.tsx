@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -73,6 +73,7 @@ function event(capacityState: EventCapacityRead | null, overrides: Partial<Event
     price_level: null,
     source_url: null,
     cover_url: null,
+    moderation_blocked: false,
     ends_at: null,
     checkin_opens_at: null,
     checkin_closes_at: null,
@@ -292,6 +293,36 @@ describe('EventDetailsPage — navegação', () => {
     const bar = goingButton.closest('[data-testid="event-actions"]');
     expect(bar).toHaveClass('sticky');
     expect(bar).not.toHaveClass('fixed');
+  });
+});
+
+describe('EventDetailsPage — moderação', () => {
+  beforeEach(() => {
+    getEventById.mockReset();
+    getPlaceEvents.mockReset().mockResolvedValue([]);
+  });
+
+  it('avisa quem criou que o evento está oculto e leva à edição', async () => {
+    // Só quem criou recebe um evento oculto (flyer-back#22 A).
+    getEventById.mockResolvedValue(event(state(), { creator_id: 'user-1', moderation_blocked: true }));
+
+    renderPage();
+
+    const notice = await screen.findByTestId('moderation-hidden');
+    expect(notice).toHaveTextContent(/está oculto/i);
+    expect(within(notice).getByRole('link', { name: /editar evento/i })).toHaveAttribute(
+      'href',
+      '/events/evt-1/edit',
+    );
+  });
+
+  it('um evento visível não mostra o aviso', async () => {
+    getEventById.mockResolvedValue(event(state(), { creator_id: 'user-1' }));
+
+    renderPage();
+
+    await screen.findByRole('link', { name: /gerenciar participantes/i });
+    expect(screen.queryByTestId('moderation-hidden')).toBeNull();
   });
 });
 

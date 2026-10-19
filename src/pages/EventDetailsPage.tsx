@@ -374,6 +374,27 @@ export default function EventDetailsPage() {
       </div>
 
       <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6">
+        {/* Só quem criou recebe um evento oculto pela moderação (flyer-back#22 A). */}
+        {isCreator && event.moderation_blocked && id && (
+          <div
+            data-testid="moderation-hidden"
+            className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900"
+          >
+            <p className="font-semibold">Este evento está oculto</p>
+            <p className="mt-1 text-sm">
+              A moderação recusou parte do conteúdo (texto, local, troféu ou fotos), e ninguém mais
+              vê este evento. Edite para corrigir: ao salvar, ele volta a aparecer.
+            </p>
+            <Link
+              to={`/events/${id}/edit`}
+              className="mt-3 inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
+            >
+              <Pencil className="h-4 w-4" aria-hidden="true" />
+              Editar evento
+            </Link>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
             <p className="text-xs text-gray-500">Preço</p>

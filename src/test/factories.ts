@@ -30,6 +30,7 @@ export function makeEvent(overrides: Partial<EventRead> = {}): EventRead {
     price_level: null,
     source_url: null,
     cover_url: null,
+    moderation_blocked: false,
     ends_at: null,
     checkin_opens_at: null,
     checkin_closes_at: null,

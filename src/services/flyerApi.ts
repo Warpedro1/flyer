@@ -13,6 +13,8 @@ import type {
   DiscoverRequest,
   DiscoverResult,
   EventCreate,
+  EventDescribeRead,
+  EventDescribeRequest,
   EventEditRead,
   EventUpdate,
   EventRead,
@@ -132,6 +134,12 @@ export async function getEventForEdit(eventId: string): Promise<EventEditRead> {
 
 export async function updateEvent(eventId: string, req: EventUpdate): Promise<EventRead> {
   const { data } = await apiClient.put<EventRead>(`/events/${encodeURIComponent(eventId)}`, req);
+  return data;
+}
+
+/** Sugestão de descrição a partir do que o criador escreveu; quem decide se usa é ele. */
+export async function describeEvent(req: EventDescribeRequest): Promise<EventDescribeRead> {
+  const { data } = await apiClient.post<EventDescribeRead>('/events/describe', req);
   return data;
 }
 

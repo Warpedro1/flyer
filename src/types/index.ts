@@ -116,6 +116,8 @@ export interface EventRead {
   /** Itens importados: página na fonte (Google Maps, Sympla) e imagem pública. */
   source_url: string | null;
   cover_url: string | null;
+  /** Oculto pela moderação (flyer-back#22 A): só quem criou recebe um evento assim. */
+  moderation_blocked: boolean;
 }
 
 export interface DiscoverRequest {
@@ -312,6 +314,17 @@ export interface EventCreate extends EventFields {
 
 /** Editar uma data do evento: tudo menos a recorrência. */
 export type EventUpdate = EventFields;
+
+/** POST /events/describe: o botão "Melhorar descrição" (nada é salvo). */
+export interface EventDescribeRequest {
+  title: string;
+  description?: string | null;
+  category?: EventCategory | null;
+}
+
+export interface EventDescribeRead {
+  description: string;
+}
 
 export interface EventMediaEdit {
   /** Caminho no bucket (o que se volta a enviar ao gravar). */
