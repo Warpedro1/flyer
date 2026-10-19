@@ -128,7 +128,8 @@ describe('DiscoverPage', () => {
 
     expect(await screen.findByText('Concerto no Tejo')).toBeInTheDocument();
     // Without a profile the API puts what pleases most people first (decision 2026-10-19).
-    expect(screen.getByText(/eventos e lugares perto de você que agradam mais gente/i)).toBeInTheDocument();
+    // It is an order, not a filter: everything nearby still comes.
+    expect(screen.getByText(/mostramos primeiro os eventos e lugares perto de você que agradam mais gente/i)).toBeInTheDocument();
     expect(screen.queryByText(/por data/i)).not.toBeInTheDocument();
   });
 

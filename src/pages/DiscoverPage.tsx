@@ -210,8 +210,8 @@ export default function DiscoverPage() {
           role="status"
         >
           <p>
-            Ainda não conhecemos seus gostos: aqui estão os eventos e lugares perto de você que
-            agradam mais gente. Faça o onboarding no Chat para receber recomendações sob medida.
+            Ainda não conhecemos seus gostos: mostramos primeiro os eventos e lugares perto de você
+            que agradam mais gente. Faça o onboarding no Chat para receber recomendações sob medida.
           </p>
           <button
             type="button"
