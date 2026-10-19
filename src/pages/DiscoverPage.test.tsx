@@ -121,13 +121,16 @@ describe('DiscoverPage', () => {
     expect(screen.queryByText(/onboarding/i)).not.toBeInTheDocument();
   });
 
-  it('sem perfil de interesses, mostra os eventos próximos e sugere o onboarding', async () => {
+  it('sem perfil de interesses, mostra o que agrada mais gente por perto e sugere o onboarding', async () => {
     discoverEventsWithMode.mockResolvedValue(result('nearby'));
 
     renderPage();
 
     expect(await screen.findByText('Concerto no Tejo')).toBeInTheDocument();
-    expect(screen.getByText(/perto de você, por data/i)).toBeInTheDocument();
+    // Without a profile the API puts what pleases most people first (decision 2026-10-19).
+    // It is an order, not a filter: everything nearby still comes.
+    expect(screen.getByText(/mostramos primeiro os eventos e lugares perto de você que agradam mais gente/i)).toBeInTheDocument();
+    expect(screen.queryByText(/por data/i)).not.toBeInTheDocument();
   });
 
   it('o aviso leva ao Chat para fazer o onboarding', async () => {
