@@ -137,8 +137,9 @@ export interface DiscoverRequest {
 }
 
 /**
- * Header `X-Discovery-Mode` de POST /events/discover. `nearby`: o utilizador ainda
- * não tem vetor de interesses e recebe os eventos próximos, por data.
+ * `X-Discovery-Mode` header of POST /events/discover. `nearby`: the user has no
+ * interest vector yet and gets the nearby events and places, what pleases most
+ * people first (broad-appeal events by date, then the most reviewed places).
  */
 export type DiscoveryMode = 'personalized' | 'nearby';
 
