@@ -16,11 +16,17 @@ export function publicName(profile: PublicIdentity | null | undefined, fallback 
 
 /** Até duas letras para o avatar sem foto: das palavras do vulgo ou das partes do @usuário. */
 export function initialsOf(label: string): string {
+  // Só letras e números contam: "(@caio)" é "caio".
   const words = label
-    .replace(/^@/, '')
     .split(/[\s._]+/)
-    .filter((w) => /\p{L}|\p{N}/u.test(w));
+    .map((w) => Array.from(w).filter((c) => /\p{L}|\p{N}/u.test(c)))
+    .filter((chars) => chars.length > 0);
   if (words.length === 0) return '?';
-  const letters = words.length === 1 ? Array.from(words[0]).slice(0, 2) : [Array.from(words[0])[0], Array.from(words[1])[0]];
+  const letters = words.length === 1 ? words[0].slice(0, 2) : [words[0][0], words[1][0]];
   return letters.join('').toUpperCase();
+}
+
+/** O texto das iniciais do avatar de alguém: o vulgo, ou o @usuário. */
+export function avatarLabel(profile: PublicIdentity | null | undefined): string {
+  return profile?.nickname || profile?.username || '';
 }

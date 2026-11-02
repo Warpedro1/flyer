@@ -14,7 +14,7 @@ import { useAuth } from '../hooks/useAuth.ts';
 import { getMyProfile } from '../services/flyerApi.ts';
 import type { MyProfile } from '../types/index.ts';
 import { formatApiError } from '../utils/apiError.ts';
-import { publicName } from '../utils/publicName.ts';
+import { avatarLabel } from '../utils/publicName.ts';
 
 interface MyDataPageProps {
   /** Conta sem CPF: o layout mostra só esta tela, para completar o cadastro. */
@@ -112,7 +112,7 @@ export default function MyDataPage({ completing = false, onAccountChange }: MyDa
           <PhotoSection
             userId={user?.id ?? ''}
             avatarUrl={profile.avatar_url}
-            label={publicName(profile, 'Você')}
+            label={avatarLabel(profile)}
             onChanged={(avatarUrl) => {
               setProfile((p) => (p ? { ...p, avatar_url: avatarUrl } : p));
               notifyAccount();

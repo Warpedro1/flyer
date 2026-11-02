@@ -26,6 +26,8 @@ describe('initialsOf', () => {
     ['bia', 'BI'],
     ['', '?'],
     ['@', '?'],
+    ['Bia (@bia.souza)', 'BB'],
+    ['(@caio)', 'CA'],
   ])('%s → %s', (label, expected) => {
     expect(initialsOf(label)).toBe(expected);
   });

@@ -14,7 +14,7 @@ import { formatApiError, isNotFoundError } from '../utils/apiError.ts';
 import { NotFoundContent } from '../components/errors/NotFound.tsx';
 import { BackButton } from '../components/navigation/BackButton.tsx';
 import { Avatar } from '../components/ui/Avatar.tsx';
-import { publicName } from '../utils/publicName.ts';
+import { avatarLabel, publicName } from '../utils/publicName.ts';
 
 /**
  * Recarrega a lista sozinha. Não é cosmético: cada leitura corre a varredura de
@@ -39,7 +39,7 @@ function CalledRow({
     <li className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
       <div className="flex items-center justify-between gap-3">
         <span className="flex min-w-0 items-center gap-3 font-medium text-red-900">
-          <Avatar url={entry.profile.avatar_url} label={name} className="h-9 w-9 text-xs" />
+          <Avatar url={entry.profile.avatar_url} label={avatarLabel(entry.profile)} className="h-9 w-9 text-xs" />
           <span className="truncate">{name}</span>
         </span>
         <div className="flex items-center gap-3">
@@ -102,11 +102,7 @@ function PersonRow({
         {entry.waitlist_position !== null && (
           <span className="font-mono text-xs text-gray-500">#{entry.waitlist_position}</span>
         )}
-        <Avatar
-          url={entry.profile.avatar_url}
-          label={publicName(entry.profile, 'Sem nome')}
-          className="h-9 w-9 text-xs"
-        />
+        <Avatar url={entry.profile.avatar_url} label={avatarLabel(entry.profile)} className="h-9 w-9 text-xs" />
         <span className="truncate">{publicName(entry.profile, 'Sem nome')}</span>
       </span>
       {action}
