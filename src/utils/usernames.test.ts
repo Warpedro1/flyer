@@ -18,6 +18,7 @@ describe('usernameFromName', () => {
     ["D'Ávila", 'd.avila'],
     ['João Ção Müller', 'joao.cao.muller'],
     ['José da Silva Xavier Pereira', 'jose.da.silva.x'],
+    ['Turma 2026', 'turma'],
     ['  ', ''],
     ['😀', ''],
   ])('%s → %s', (name, expected) => {
