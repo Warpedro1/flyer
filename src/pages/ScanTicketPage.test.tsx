@@ -15,7 +15,7 @@ vi.mock('../services/flyerApi.ts', () => ({ scanTicket, openCheckin }));
 const OK: ScanResult = {
   ok: true,
   status: 'admitted',
-  attendee: { id: 'user-2', name: 'Ana Silva' },
+  attendee: { id: 'user-2', username: 'ana.silva', nickname: 'Ana Silva', avatar_url: null },
   trophy: {
     id: 'tr-1',
     template_id: 'tpl-1',
@@ -102,7 +102,8 @@ describe('ScanTicketPage', () => {
 
     await act(async () => finish(OK));
 
-    expect(await screen.findByText('Ana Silva')).toBeInTheDocument();
+    expect(await screen.findByText('Ana Silva (@ana.silva)')).toBeInTheDocument();
+    expect(screen.getByText('AS')).toBeInTheDocument();
     expect(screen.getByText(/check-in feito/i)).toBeInTheDocument();
     expect(screen.getByText('Presença: Noite de Frevo')).toBeInTheDocument();
     expect(vibrate).toHaveBeenCalled();
@@ -209,7 +210,7 @@ describe('ScanTicketPage', () => {
     await waitFor(() =>
       expect(scanTicket).toHaveBeenCalledWith('evt-1', 'tok-1', { confirmWithoutLocation: false }),
     );
-    expect(await screen.findByText('Ana Silva')).toBeInTheDocument();
+    expect(await screen.findByText('Ana Silva (@ana.silva)')).toBeInTheDocument();
   });
 
   it('não envia nada com o campo vazio', async () => {

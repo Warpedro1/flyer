@@ -187,10 +187,40 @@ export interface FollowRead {
   created_at: string | null;
 }
 
-/** O que uma pessoa vê de outra. Nunca o e-mail (#30); o @usuário vem com a #32. */
+/**
+ * O que uma pessoa vê de outra: a identidade pública (Warpedro1/flyer-back#32, decisões
+ * 2026-11-01). Nunca o nome (privado), o e-mail, o CPF ou o telefone.
+ */
 export interface ProfileBrief {
   id: string;
+  username: string | null;
+  /** O vulgo, opcional. */
+  nickname: string | null;
+  /** URL assinado da foto (dura 1 hora); null sem foto. */
+  avatar_url: string | null;
+}
+
+/** "Meus dados" (espelha `MyProfileRead`, Warpedro1/flyer-back#24): só a própria pessoa vê. */
+export interface MyProfile {
+  /** Privado: só a própria pessoa vê. */
   name: string | null;
+  username: string;
+  /** Quando o @usuário pode ser trocado de novo (uma vez a cada 30 dias); null = agora. */
+  username_change_available_at: string | null;
+  nickname: string | null;
+  email: string | null;
+  cpf_masked: string | null;
+  phone_masked: string | null;
+  avatar_url: string | null;
+  /** Tem CPF: pode usar o app inteiro. */
+  complete: boolean;
+}
+
+/** Se um @usuário está livre (espelha `UsernameAvailability`). */
+export interface UsernameAvailability {
+  available: boolean;
+  reason: 'invalid' | 'reserved' | 'taken' | null;
+  suggestion: string | null;
 }
 
 export interface FollowAction {

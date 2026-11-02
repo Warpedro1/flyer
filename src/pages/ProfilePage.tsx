@@ -1,33 +1,31 @@
-import { CreditCard, LogOut, Users } from 'lucide-react';
+import { CreditCard, LogOut, UserCog, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import { Avatar } from '../components/ui/Avatar.tsx';
 import { TrophyIcon } from '../components/ui/TrophyIcon.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
-import { type ProfileStatus, getProfileStatus, getUserTrophies } from '../services/flyerApi.ts';
-import type { TrophyRead } from '../types/index.ts';
+import { getMyProfile, getUserTrophies } from '../services/flyerApi.ts';
+import type { MyProfile, TrophyRead } from '../types/index.ts';
 import { formatApiError } from '../utils/apiError.ts';
 
-const DEFAULT_AVATAR =
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
-
 export default function ProfilePage() {
-  const { user, signOut } = useAuth();
+  const { signOut } = useAuth();
   const navigate = useNavigate();
   const [trophies, setTrophies] = useState<TrophyRead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [identity, setIdentity] = useState<ProfileStatus | null>(null);
+  const [me, setMe] = useState<MyProfile | null>(null);
 
-  // CPF e celular da própria conta, já mascarados pelo backend.
+  // A identidade pública da própria pessoa (Warpedro1/flyer-back#32); o resto fica em "Meus dados".
   useEffect(() => {
     let cancelled = false;
-    getProfileStatus()
-      .then((s) => {
-        if (!cancelled) setIdentity(s);
+    getMyProfile()
+      .then((data) => {
+        if (!cancelled) setMe(data);
       })
       .catch(() => {
-        if (!cancelled) setIdentity(null);
+        if (!cancelled) setMe(null);
       });
     return () => {
       cancelled = true;
@@ -51,41 +49,32 @@ export default function ProfilePage() {
     };
   }, []);
 
-  const avatarUrl =
-    user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? DEFAULT_AVATAR;
-  const displayName =
-    (user?.user_metadata?.full_name as string | undefined) ??
-    user?.email ??
-    'Usuário';
+  const handle = me?.username ? `@${me.username}` : null;
+  const title = me?.nickname ?? handle ?? 'Seu perfil';
 
   return (
     <div className="mx-auto max-w-3xl p-4 pb-28 sm:p-8 md:pb-8">
       <div className="flex flex-col items-center text-center">
-        <img
-          src={avatarUrl}
-          alt=""
-          className="h-28 w-28 rounded-full border-4 border-white object-cover shadow-xl ring-4 ring-red-100"
+        <Avatar
+          url={me?.avatar_url}
+          label={title}
+          className="h-28 w-28 border-4 border-white text-4xl shadow-xl ring-4 ring-red-100"
         />
-        <h1 className="mt-4 text-2xl font-bold text-gray-900">{displayName}</h1>
-        <p className="text-sm text-gray-500">{user?.email}</p>
+        <h1 className="mt-4 text-2xl font-bold text-gray-900">{title}</h1>
+        {me?.nickname && handle && <p className="text-sm text-gray-500">{handle}</p>}
         <span className="mt-3 inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
           Plano Flyer
         </span>
 
-        {identity?.complete && (
-          <dl className="mt-4 grid w-full max-w-md grid-cols-2 gap-3 text-left">
-            <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
-              <dt className="text-xs text-gray-500">CPF</dt>
-              <dd className="font-mono text-sm text-gray-900">{identity.cpf_masked}</dd>
-            </div>
-            <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
-              <dt className="text-xs text-gray-500">Celular</dt>
-              <dd className="font-mono text-sm text-gray-900">{identity.phone_masked ?? 'Não informado'}</dd>
-            </div>
-          </dl>
-        )}
+        <Link
+          to="/profile/me"
+          className="mt-6 flex w-full max-w-md items-center justify-center gap-2 rounded-2xl bg-red-600 py-3 font-semibold text-white shadow-lg shadow-red-200 transition hover:bg-red-700"
+        >
+          <UserCog className="h-5 w-5" />
+          Meus dados
+        </Link>
 
-        <div className="mt-8 flex w-full max-w-md flex-col gap-3 sm:flex-row">
+        <div className="mt-3 flex w-full max-w-md flex-col gap-3 sm:flex-row">
           <button
             type="button"
             onClick={() => navigate('/plans')}

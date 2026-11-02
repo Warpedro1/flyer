@@ -1,9 +1,8 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 
 import AppLayout from './components/layout/AppLayout.tsx';
 import ChatPage from './pages/ChatPage.tsx';
 import CheckInPage from './pages/CheckInPage.tsx';
-import CompleteProfilePage from './pages/CompleteProfilePage.tsx';
 import CreateEventPage from './pages/CreateEventPage.tsx';
 import EditEventPage from './pages/EditEventPage.tsx';
 import DiscoverPage from './pages/DiscoverPage.tsx';
@@ -16,6 +15,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage.tsx';
 import SignupCodePage from './pages/SignupCodePage.tsx';
 import SignupPage from './pages/SignupPage.tsx';
 import MapPage from './pages/MapPage.tsx';
+import MyDataPage from './pages/MyDataPage.tsx';
 import MyEventsPage from './pages/MyEventsPage.tsx';
 import MyTicketPage from './pages/MyTicketPage.tsx';
 import NotFoundPage from './pages/NotFoundPage.tsx';
@@ -33,7 +33,8 @@ export default function App() {
       <Route path="/signup/code" element={<SignupCodePage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/complete-profile" element={<CompleteProfilePage />} />
+      {/* O antigo "Completar cadastro" agora é "Meus dados" (Warpedro1/flyer-back#24). */}
+      <Route path="/complete-profile" element={<Navigate to="/profile/me" replace />} />
       <Route element={<AppLayout />}>
         <Route path="/" element={<DiscoverPage />} />
         <Route path="/map" element={<MapPage />} />
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="/checkin" element={<CheckInPage />} />
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile/me" element={<MyDataPage />} />
         <Route path="/plans" element={<PlansPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
       </Route>

@@ -6,7 +6,9 @@ import { openCheckin, scanTicket } from '../services/flyerApi.ts';
 import type { ScanResult } from '../types/index.ts';
 import { formatApiError, getApiErrorInfo } from '../utils/apiError.ts';
 import { BackButton } from '../components/navigation/BackButton.tsx';
+import { Avatar } from '../components/ui/Avatar.tsx';
 import { TrophyIcon } from '../components/ui/TrophyIcon.tsx';
+import { publicName } from '../utils/publicName.ts';
 import { isChunkLoadError, reloadOnce } from '../utils/chunkReload.ts';
 
 /** Depois do sucesso, volta para a câmera sozinho: dá para ler uma fila seguida. */
@@ -290,7 +292,13 @@ export default function ScanTicketPage() {
             {phase.kind === 'success' && (
               <>
                 <CheckCircle2 className="h-16 w-16" />
-                <p className="text-2xl font-bold">{phase.result.attendee.name ?? 'Participante'}</p>
+                {/* A foto ajuda o organizador a reconhecer quem está na porta. */}
+                <Avatar
+                  url={phase.result.attendee.avatar_url}
+                  label={publicName(phase.result.attendee)}
+                  className="h-20 w-20 border-4 border-white text-2xl"
+                />
+                <p className="text-2xl font-bold">{publicName(phase.result.attendee)}</p>
                 <p className="text-lg font-semibold">Check-in feito</p>
                 {phase.result.trophy && (
                   <p className="flex items-center gap-2 rounded-2xl bg-white/20 px-3 py-1 text-sm">

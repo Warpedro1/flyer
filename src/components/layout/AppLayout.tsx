@@ -17,14 +17,24 @@ import {
   useNavigate,
 } from 'react-router-dom';
 
+import type { AccountContext } from '../../hooks/useAccount.ts';
 import { useAppVersionCheck } from '../../hooks/useAppVersionCheck.ts';
 import { useAuth } from '../../hooks/useAuth.ts';
 import { useAccountGate } from '../../hooks/useAccountGate.ts';
+import { COMPLETE_PROFILE_PATH } from '../../lib/emailCodeRedirect.ts';
+import MyDataPage from '../../pages/MyDataPage.tsx';
 import { markIntroSeen } from '../../services/flyerApi.ts';
 import { isImmersivePath } from '../../utils/immersivePaths.ts';
 import { ErrorBoundary } from '../errors/ErrorBoundary.tsx';
 import { IntroTour } from '../intro/IntroTour.tsx';
+import { Avatar } from '../ui/Avatar.tsx';
 import { WingHeartLogo } from './WingHeartLogo.tsx';
+
+/** A foto da própria pessoa no menu, ou as iniciais do @usuário. */
+interface NavAvatar {
+  url: string | null;
+  label: string;
+}
 
 function SidebarLink({
   to,
@@ -33,7 +43,7 @@ function SidebarLink({
   label,
   badge,
   collapsed,
-  avatarUrl,
+  avatar,
   tour,
 }: {
   to: string;
@@ -42,7 +52,7 @@ function SidebarLink({
   label: string;
   badge?: string;
   collapsed: boolean;
-  avatarUrl?: string;
+  avatar?: NavAvatar;
   /** Alvo da introdução (`data-tour`). */
   tour?: string;
 }) {
@@ -61,12 +71,8 @@ function SidebarLink({
         }`
       }
     >
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt=""
-          className="w-8 h-8 rounded-full object-cover shrink-0 border border-gray-200"
-        />
+      {avatar ? (
+        <Avatar url={avatar.url} label={avatar.label} className="h-8 w-8 border border-gray-200 text-xs" />
       ) : (
         <span className="shrink-0 [&_svg]:w-5 [&_svg]:h-5">{icon}</span>
       )}
@@ -89,14 +95,14 @@ function MobileNavButton({
   end,
   icon,
   label,
-  avatarUrl,
+  avatar,
   tour,
 }: {
   to: string;
   end?: boolean;
   icon?: React.ReactNode;
   label: string;
-  avatarUrl?: string;
+  avatar?: NavAvatar;
   /** Alvo da introdução (`data-tour`). */
   tour?: string;
 }) {
@@ -112,13 +118,11 @@ function MobileNavButton({
         isActive ? 'text-red-600' : 'text-gray-400 hover:text-gray-600'
       }`}
     >
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt=""
-          className={`h-7 w-7 rounded-full object-cover ring-2 ring-offset-2 ${
-            isActive ? 'ring-red-600' : 'ring-transparent'
-          }`}
+      {avatar ? (
+        <Avatar
+          url={avatar.url}
+          label={avatar.label}
+          className={`h-7 w-7 text-[10px] ring-2 ring-offset-2 ${isActive ? 'ring-red-600' : 'ring-transparent'}`}
         />
       ) : (
         <span className="[&_svg]:h-6 [&_svg]:w-6">{icon}</span>
@@ -128,12 +132,9 @@ function MobileNavButton({
   );
 }
 
-const DEFAULT_AVATAR =
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
-
 export default function AppLayout() {
   const { user, session, loading, signOut } = useAuth();
-  const { gate, intro } = useAccountGate(session?.access_token, user?.id);
+  const { gate, intro, account, recheck } = useAccountGate(session?.access_token, user?.id);
   // Recarrega uma aba antiga quando volta ao ecrã depois de um deploy.
   useAppVersionCheck();
   const location = useLocation();
@@ -174,8 +175,19 @@ export default function AppLayout() {
   if (gate === 'needs_signup_code') {
     return <Navigate to="/signup/code" replace />;
   }
+  // Sem CPF, só "Meus dados", para completar o cadastro (Warpedro1/flyer-back#24); o
+  // resto do app espera.
   if (gate === 'needs_profile') {
-    return <Navigate to="/complete-profile" replace />;
+    if (location.pathname !== COMPLETE_PROFILE_PATH) {
+      return <Navigate to={COMPLETE_PROFILE_PATH} replace />;
+    }
+    return (
+      <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-gray-50 font-sans text-gray-900">
+        <main className="min-h-0 flex-1 overflow-y-auto">
+          <MyDataPage completing onAccountChange={recheck} />
+        </main>
+      </div>
+    );
   }
   // O tour aponta os botões do Descobrir (mapa, criar, meus eventos): começa lá.
   if (showIntro && location.pathname !== '/') {
@@ -183,7 +195,11 @@ export default function AppLayout() {
   }
 
   const immersive = isImmersivePath(location.pathname);
-  const avatarUrl = user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? DEFAULT_AVATAR;
+  const navAvatar: NavAvatar = {
+    url: account?.avatarUrl ?? null,
+    label: account?.username ? `@${account.username}` : 'Você',
+  };
+  const outletContext: AccountContext = { account, refreshAccount: recheck };
 
   return (
     <div className="flex h-[100dvh] w-full overflow-hidden bg-gray-50 font-sans text-gray-900">
@@ -256,7 +272,7 @@ export default function AppLayout() {
           />
           <SidebarLink
             to="/profile"
-            avatarUrl={avatarUrl}
+            avatar={navAvatar}
             label="Perfil"
             tour="profile"
             collapsed={collapsed}
@@ -306,7 +322,7 @@ export default function AppLayout() {
         <main className="relative min-h-0 flex-1 overflow-y-auto overscroll-y-contain scroll-smooth bg-gray-50/50">
           {/* Um erro numa página não leva a navegação; mudar de página limpa o erro. */}
           <ErrorBoundary key={location.pathname}>
-            <Outlet />
+            <Outlet context={outletContext} />
           </ErrorBoundary>
         </main>
 
@@ -332,7 +348,7 @@ export default function AppLayout() {
             />
             <MobileNavButton
               to="/profile"
-              avatarUrl={avatarUrl}
+              avatar={navAvatar}
               label="Perfil"
               tour="profile"
             />

@@ -37,13 +37,13 @@ describe('profile_incomplete', () => {
     const go = vi.fn();
 
     expect(redirectIfEmailCodeRequired(error(403, 'profile_incomplete'), '/events', go)).toBe(true);
-    expect(go).toHaveBeenCalledWith('/complete-profile');
+    expect(go).toHaveBeenCalledWith('/profile/me');
   });
 
   it('não sai do próprio ecrã de completar', () => {
     const go = vi.fn();
 
-    redirectIfEmailCodeRequired(error(403, 'profile_incomplete'), '/complete-profile', go);
+    redirectIfEmailCodeRequired(error(403, 'profile_incomplete'), '/profile/me', go);
 
     expect(go).not.toHaveBeenCalled();
   });

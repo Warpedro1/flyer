@@ -13,6 +13,8 @@ import type { AttendeeListRead, RsvpWithProfile } from '../types/index.ts';
 import { formatApiError, isNotFoundError } from '../utils/apiError.ts';
 import { NotFoundContent } from '../components/errors/NotFound.tsx';
 import { BackButton } from '../components/navigation/BackButton.tsx';
+import { Avatar } from '../components/ui/Avatar.tsx';
+import { publicName } from '../utils/publicName.ts';
 
 /**
  * Recarrega a lista sozinha. Não é cosmético: cada leitura corre a varredura de
@@ -32,11 +34,14 @@ function CalledRow({
 }) {
   const countdown = useCountdown(entry.call_expires_at);
   const [confirming, setConfirming] = useState(false);
-  const name = entry.profile.name ?? 'Sem nome';
+  const name = publicName(entry.profile, 'Sem nome');
   return (
     <li className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
       <div className="flex items-center justify-between gap-3">
-        <span className="font-medium text-red-900">{name}</span>
+        <span className="flex min-w-0 items-center gap-3 font-medium text-red-900">
+          <Avatar url={entry.profile.avatar_url} label={name} className="h-9 w-9 text-xs" />
+          <span className="truncate">{name}</span>
+        </span>
         <div className="flex items-center gap-3">
           <span className="font-mono text-sm font-bold text-red-700">
             {countdown.expired ? 'prazo esgotado' : countdown.label}
@@ -92,14 +97,17 @@ function PersonRow({
   action?: React.ReactNode;
 }) {
   return (
-    <li className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
-      <span className="text-gray-900">
+    <li className="flex items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
+      <span className="flex min-w-0 items-center gap-3 text-gray-900">
         {entry.waitlist_position !== null && (
-          <span className="mr-2 font-mono text-xs text-gray-500">
-            #{entry.waitlist_position}
-          </span>
+          <span className="font-mono text-xs text-gray-500">#{entry.waitlist_position}</span>
         )}
-        {entry.profile.name ?? 'Sem nome'}
+        <Avatar
+          url={entry.profile.avatar_url}
+          label={publicName(entry.profile, 'Sem nome')}
+          className="h-9 w-9 text-xs"
+        />
+        <span className="truncate">{publicName(entry.profile, 'Sem nome')}</span>
       </span>
       {action}
     </li>

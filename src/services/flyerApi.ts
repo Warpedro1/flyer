@@ -22,6 +22,7 @@ import type {
   FollowCreatedResponse,
   MyEventsRole,
   MyEventsWhen,
+  MyProfile,
   OkResponse,
   PendingFollowOut,
   PlanRead,
@@ -32,6 +33,7 @@ import type {
   RsvpRead,
   ScanResult,
   TrophyRead,
+  UsernameAvailability,
 } from '../types/index.ts';
 import { parseDiscoveryMode } from '../utils/discoveryMode.ts';
 
@@ -314,6 +316,10 @@ export interface SignUpRequest {
   /** Opcional (Warpedro1/flyer-back#29). */
   phone?: string | null;
   password: string;
+  /** O @usuário escolhido (Warpedro1/flyer-back#32); sem ele, o backend faz um do nome. */
+  username?: string;
+  /** O vulgo, opcional. */
+  nickname?: string | null;
 }
 
 /** Resposta de `POST /auth/signup` (espelha `SignupOut`). */
@@ -346,6 +352,9 @@ export interface ProfileStatus {
   intro_seen: boolean;
   /** Já fez o onboarding do chat: o fim do tour leva à descoberta, não ao chat. */
   onboarded: boolean;
+  /** A identidade pública da própria pessoa, para o menu (Warpedro1/flyer-back#32). */
+  username?: string | null;
+  avatar_url?: string | null;
 }
 
 export async function getProfileStatus(): Promise<ProfileStatus> {
@@ -361,6 +370,50 @@ export async function markIntroSeen(): Promise<void> {
 /** Completa o cadastro (contas Google, no 1.º acesso). */
 export async function completeProfileIdentity(req: { cpf: string; phone?: string | null }): Promise<void> {
   await apiClient.put('/auth/profile/identity', req);
+}
+
+/** "Meus dados" (Warpedro1/flyer-back#24): o que só a própria pessoa vê. */
+export async function getMyProfile(): Promise<MyProfile> {
+  const { data } = await apiClient.get<MyProfile>('/auth/profile/me');
+  return data;
+}
+
+/** O nome completo, que só a própria pessoa vê. */
+export async function updateMyName(name: string): Promise<void> {
+  await apiClient.put('/auth/profile/name', { name });
+}
+
+/** Um @usuário novo: só uma vez a cada 30 dias. */
+export async function updateMyUsername(username: string): Promise<void> {
+  await apiClient.put('/auth/profile/username', { username });
+}
+
+/** O vulgo; vazio ou null remove. */
+export async function updateMyNickname(nickname: string | null): Promise<void> {
+  await apiClient.put('/auth/profile/nickname', { nickname });
+}
+
+/** Inclui, troca ou (com null) remove o celular. */
+export async function updateMyPhone(phone: string | null): Promise<void> {
+  await apiClient.put('/auth/profile/phone', { phone });
+}
+
+/** Usa a foto já enviada para `avatars/{uid}/…`: o backend modera antes de guardar. */
+export async function setMyAvatar(path: string): Promise<{ avatar_url: string | null }> {
+  const { data } = await apiClient.put<{ avatar_url: string | null }>('/auth/profile/avatar', { path });
+  return data;
+}
+
+export async function removeMyAvatar(): Promise<void> {
+  await apiClient.delete('/auth/profile/avatar');
+}
+
+/** Se um @usuário está livre, enquanto se digita (cadastro e "Meus dados"). */
+export async function checkUsername(username: string): Promise<UsernameAvailability> {
+  const { data } = await apiClient.get<UsernameAvailability>('/auth/username-available', {
+    params: { u: username },
+  });
+  return data;
 }
 
 /** Um erro apanhado pela tela de erro (#33), para `app_errors` (#25). */

@@ -9,17 +9,22 @@ import {
   authLink,
   authPrimaryButton,
 } from '../components/auth/AuthShell.tsx';
+import { UsernameHint } from '../components/ui/UsernameHint.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
-import { signUpWithEmail } from '../services/flyerApi.ts';
+import { useUsernameCheck } from '../hooks/useUsernameCheck.ts';
+import { checkUsername, signUpWithEmail } from '../services/flyerApi.ts';
 import { formatApiError } from '../utils/apiError.ts';
 import { formatCpfInput, formatPhoneInput, identityProblems } from '../utils/brDocuments.ts';
 import { PASSWORD_RULE_TEXT, passwordProblems } from '../utils/passwordRules.ts';
 import { saveSignupTicket } from '../utils/signupTicket.ts';
+import { normalizeUsername, usernameFromName, usernameRefusal } from '../utils/usernames.ts';
 
 export default function SignupPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
+  const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
   const [cpf, setCpf] = useState('');
   const [phone, setPhone] = useState('');
@@ -28,13 +33,23 @@ export default function SignupPage() {
   const [problems, setProblems] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const check = useUsernameCheck(username);
 
   if (user) return <Navigate to="/" replace />;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    const found = [...identityProblems(cpf, phone), ...passwordProblems(password)];
+    const found: string[] = [];
+    if (!username) {
+      found.push('Escolha um @usuário.');
+    } else {
+      // A conferência ainda não respondeu para o que está escrito: pergunta agora.
+      const verdict = check ?? (await checkUsername(username).catch(() => null));
+      const refusal = usernameRefusal(verdict);
+      if (refusal) found.push(refusal);
+    }
+    found.push(...identityProblems(cpf, phone), ...passwordProblems(password));
     if (password !== confirm) found.push('As senhas não coincidem.');
     setProblems(found);
     if (found.length > 0) return;
@@ -42,9 +57,11 @@ export default function SignupPage() {
     setBusy(true);
     const address = email.trim();
     try {
-      // Pelo backend: valida e diz se o e-mail, o CPF ou o celular já têm conta.
+      // Pelo backend: valida e diz se o e-mail, o CPF, o celular ou o @usuário já têm conta.
       const { ticket } = await signUpWithEmail({
         name: name.trim(),
+        username,
+        ...(nickname.trim() ? { nickname: nickname.trim() } : {}),
         email: address,
         cpf,
         ...(phone.trim() ? { phone } : {}),
@@ -84,6 +101,46 @@ export default function SignupPage() {
             className={authInput}
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onBlur={() => {
+              // Sugere o @usuário a partir do nome, como o banco faria; dá para trocar.
+              if (!username) setUsername(usernameFromName(name));
+            }}
+          />
+          <p className="mt-1 text-xs text-gray-500">Só você vê seu nome.</p>
+        </div>
+        <div>
+          <label htmlFor="username" className={authLabel}>
+            @usuário
+          </label>
+          <div className="relative">
+            <span className="pointer-events-none absolute left-4 top-1/2 mt-0.5 -translate-y-1/2 text-gray-400">@</span>
+            <input
+              id="username"
+              type="text"
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
+              maxLength={20}
+              className={`${authInput} pl-8`}
+              value={username}
+              onChange={(e) => setUsername(normalizeUsername(e.target.value))}
+            />
+          </div>
+          <UsernameHint check={check} onUse={setUsername} />
+          <p className="mt-1 text-xs text-gray-500">É assim que as pessoas te encontram no Flyer.</p>
+        </div>
+        <div>
+          <label htmlFor="nickname" className={authLabel}>
+            Vulgo <span className="font-normal text-gray-400">(opcional)</span>
+          </label>
+          <input
+            id="nickname"
+            type="text"
+            maxLength={40}
+            placeholder="Como as pessoas te conhecem"
+            className={authInput}
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
           />
         </div>
         <div>

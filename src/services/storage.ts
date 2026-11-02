@@ -87,3 +87,33 @@ export async function uploadTrophyIcon(userId: string, file: File): Promise<stri
 
   return uploadToEventMedia(userId, file, extension);
 }
+
+/** A foto de perfil (Warpedro1/flyer-back#24): só os formatos do bucket `avatars`. */
+const AVATAR_EXTENSIONS: Record<string, string> = {
+  'image/webp': 'webp',
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+};
+/** O bucket aceita até 2 MB; a foto já reduzida para 512×512 fica bem abaixo disso. */
+export const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+
+/**
+ * Envia a foto de perfil (já reduzida por `resizeToSquare`) para `avatars/{userId}/<uuid>.<ext>`
+ * e devolve o caminho. Só vale depois que o backend a modera (`setMyAvatar`).
+ */
+export async function uploadAvatar(userId: string, photo: Blob): Promise<string> {
+  const extension = AVATAR_EXTENSIONS[photo.type];
+  if (!extension) {
+    throw new Error('A foto precisa ser uma imagem JPG, PNG ou WEBP.');
+  }
+  if (photo.size > MAX_AVATAR_BYTES) {
+    throw new Error('Foto muito grande. Limite de 2 MB.');
+  }
+  const path = `${userId}/${crypto.randomUUID()}.${extension}`;
+  const { error } = await supabase.storage.from('avatars').upload(path, photo, {
+    contentType: photo.type,
+    upsert: false,
+  });
+  if (error) throw error;
+  return path;
+}

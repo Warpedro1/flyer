@@ -39,6 +39,18 @@ const getProfileStatus = vi.hoisted(() =>
 const markIntroSeen = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 vi.mock('../../services/flyerApi.ts', () => ({ getEmailCodeStatus, getProfileStatus, markIntroSeen }));
 
+// "Meus dados" tem os seus próprios testes; aqui só importa quando e como aparece.
+vi.mock('../../pages/MyDataPage.tsx', () => ({
+  default: ({ completing, onAccountChange }: { completing?: boolean; onAccountChange?: () => void }) => (
+    <div>
+      <p>{completing ? 'Completar Meus dados' : 'Meus dados'}</p>
+      <button type="button" onClick={onAccountChange}>
+        Salvei
+      </button>
+    </div>
+  ),
+}));
+
 function renderAppWithChild(childText: string) {
   return render(
     <MemoryRouter initialEntries={['/']}>
@@ -65,6 +77,23 @@ describe('AppLayout', () => {
       const links = screen.getAllByRole('link', { name });
       expect(links.length).toBeGreaterThan(0);
     }
+  });
+
+  it('o Perfil do menu mostra a foto de perfil da pessoa', async () => {
+    getProfileStatus.mockResolvedValueOnce({
+      complete: true,
+      cpf_masked: null,
+      phone_masked: null,
+      username: 'ana.lima',
+      avatar_url: 'https://storage.example/eu.webp',
+    });
+
+    const { container } = renderAppWithChild('outlet-stub');
+    await screen.findByRole('main');
+
+    await waitFor(() =>
+      expect(container.querySelectorAll('img[src="https://storage.example/eu.webp"]').length).toBeGreaterThan(0),
+    );
   });
 
   it('renderiza o conteúdo da rota filha (Outlet) na área principal', async () => {
@@ -105,9 +134,9 @@ describe('AppLayout — código do login por e-mail', () => {
         <Routes>
           <Route element={<AppLayout />}>
             <Route path="/" element={<p>Início</p>} />
+            <Route path="/profile/me" element={<p>Meus dados pela rota</p>} />
           </Route>
           <Route path="/login/code" element={<p>Tela do código</p>} />
-          <Route path="/complete-profile" element={<p>Completar cadastro</p>} />
           <Route path="/signup/code" element={<p>Código do cadastro</p>} />
         </Routes>
       </MemoryRouter>,
@@ -147,13 +176,26 @@ describe('AppLayout — código do login por e-mail', () => {
     expect(getEmailCodeStatus).not.toHaveBeenCalled();
   });
 
-  it('sem CPF e celular vai completar o cadastro', async () => {
+  it('sem CPF vai completar o cadastro em "Meus dados", sem o resto do app', async () => {
     withSession(['oauth']);
     getProfileStatus.mockResolvedValueOnce({ complete: false, cpf_masked: null, phone_masked: null });
 
     renderWithCodeRoute();
 
-    expect(await screen.findByText('Completar cadastro')).toBeInTheDocument();
+    expect(await screen.findByText('Completar Meus dados')).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: /navegação principal/i })).not.toBeInTheDocument();
+    expect(screen.queryByText('Início')).not.toBeInTheDocument();
+  });
+
+  it('depois de completar o cadastro, o app abre', async () => {
+    const user = userEvent.setup();
+    withSession(['oauth']);
+    getProfileStatus.mockResolvedValueOnce({ complete: false, cpf_masked: null, phone_masked: null });
+
+    renderWithCodeRoute();
+    await user.click(await screen.findByRole('button', { name: 'Salvei' }));
+
+    expect(await screen.findByRole('navigation', { name: /navegação principal/i })).toBeInTheDocument();
   });
 
   it('o código vem antes do cadastro', async () => {

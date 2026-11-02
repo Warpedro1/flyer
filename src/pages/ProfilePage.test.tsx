@@ -6,10 +6,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ProfilePage from './ProfilePage.tsx';
 
 const getUserTrophies = vi.hoisted(() => vi.fn());
-const getProfileStatus = vi.hoisted(() => vi.fn());
+const getMyProfile = vi.hoisted(() => vi.fn());
 const signOut = vi.hoisted(() => vi.fn());
 
-vi.mock('../services/flyerApi.ts', () => ({ getUserTrophies, getProfileStatus }));
+vi.mock('../services/flyerApi.ts', () => ({ getUserTrophies, getMyProfile }));
+
+const ME = {
+  name: 'Ana Lima',
+  username: 'ana.lima',
+  username_change_available_at: null,
+  nickname: 'Aninha',
+  email: 'ana@example.com',
+  cpf_masked: '***.982.247-**',
+  phone_masked: '(81) 9****-5678',
+  avatar_url: 'https://storage.example/eu.webp',
+  complete: true,
+};
 vi.mock('../hooks/useAuth.ts', () => ({
   useAuth: () => ({
     user: { id: 'user-1', email: 'ana@example.com', user_metadata: {} },
@@ -23,9 +35,7 @@ vi.mock('../hooks/useAuth.ts', () => ({
 describe('ProfilePage', () => {
   beforeEach(() => {
     getUserTrophies.mockReset().mockResolvedValue([]);
-    getProfileStatus
-      .mockReset()
-      .mockResolvedValue({ complete: true, cpf_masked: '***.982.247-**', phone_masked: '(81) 9****-5678' });
+    getMyProfile.mockReset().mockResolvedValue(ME);
     signOut.mockReset().mockResolvedValue(undefined);
   });
 
@@ -42,26 +52,45 @@ describe('ProfilePage', () => {
     expect(signOut).toHaveBeenCalledTimes(1);
   });
 
-  it('mostra o CPF e o celular da própria conta, mascarados', async () => {
-    render(
+  it('mostra a própria foto, o vulgo e o @usuário', async () => {
+    const { container } = render(
       <MemoryRouter>
         <ProfilePage />
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText('***.982.247-**')).toBeInTheDocument();
-    expect(screen.getByText('(81) 9****-5678')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Aninha' })).toBeInTheDocument();
+    expect(screen.getByText('@ana.lima')).toBeInTheDocument();
+    expect(container.querySelector('img[src="https://storage.example/eu.webp"]')).not.toBeNull();
+    // CPF e celular ficam em "Meus dados".
+    expect(screen.queryByText('***.982.247-**')).not.toBeInTheDocument();
   });
 
-  it('sem celular, diz que não foi informado (Warpedro1/flyer-back#29)', async () => {
-    getProfileStatus.mockResolvedValue({ complete: true, cpf_masked: '***.982.247-**', phone_masked: null });
+  it('sem vulgo, o @usuário vira o título', async () => {
+    getMyProfile.mockResolvedValue({ ...ME, nickname: null, avatar_url: null });
     render(
       <MemoryRouter>
         <ProfilePage />
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText('Não informado')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '@ana.lima' })).toBeInTheDocument();
+  });
+
+  it('leva a "Meus dados"', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/profile']}>
+        <Routes>
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile/me" element={<p>Tela de Meus dados</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.click(await screen.findByRole('link', { name: /meus dados/i }));
+
+    expect(screen.getByText('Tela de Meus dados')).toBeInTheDocument();
   });
 
   it('o troféu leva ao evento de onde veio (Warpedro1/flyer-back#40)', async () => {

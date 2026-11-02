@@ -8,9 +8,10 @@ import { readSignupTicket } from '../utils/signupTicket.ts';
 import SignupPage from './SignupPage.tsx';
 
 const signUpWithEmail = vi.hoisted(() => vi.fn());
+const checkUsername = vi.hoisted(() => vi.fn());
 
 // O cadastro vai pelo backend (valida CPF/celular e diz o que já tem conta).
-vi.mock('../services/flyerApi.ts', () => ({ signUpWithEmail }));
+vi.mock('../services/flyerApi.ts', () => ({ signUpWithEmail, checkUsername }));
 vi.mock('../hooks/useAuth.ts', () => ({
   useAuth: () => ({ user: null, session: null, loading: false, signInWithGoogle: vi.fn(), signOut: vi.fn() }),
 }));
@@ -31,6 +32,8 @@ async function fill(
   user: ReturnType<typeof userEvent.setup>,
   {
     name = 'Ana',
+    username = 'ana.lima',
+    nickname = '',
     email = 'ana@example.com',
     cpf = '52998224725',
     phone = '81912345678',
@@ -39,6 +42,11 @@ async function fill(
   } = {},
 ) {
   await user.type(screen.getByLabelText(/^nome/i), name);
+  // Ao sair do nome, o @usuário vem sugerido; aqui escreve-se o pretendido.
+  const handle = screen.getByLabelText(/^@usuário/i);
+  await user.clear(handle);
+  if (username) await user.type(handle, username);
+  if (nickname) await user.type(screen.getByLabelText(/^vulgo/i), nickname);
   await user.type(screen.getByLabelText(/^e-mail/i), email);
   await user.type(screen.getByLabelText(/^cpf/i), cpf);
   if (phone) await user.type(screen.getByLabelText(/^celular/i), phone);
@@ -51,6 +59,62 @@ describe('SignupPage', () => {
   beforeEach(() => {
     localStorage.clear();
     signUpWithEmail.mockReset().mockResolvedValue({ ticket: 't'.repeat(43) });
+    checkUsername.mockReset().mockResolvedValue({ available: true, reason: null, suggestion: null });
+  });
+
+  it('sugere o @usuário a partir do nome', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText(/^nome/i), 'Ana Lima');
+    await user.tab();
+
+    expect(screen.getByLabelText(/^@usuário/i)).toHaveValue('ana.lima');
+    expect(await screen.findByText(/disponível/i)).toBeInTheDocument();
+  });
+
+  it('avisa quando o @usuário está em uso e oferece outro', async () => {
+    const user = userEvent.setup();
+    checkUsername.mockResolvedValue({ available: false, reason: 'taken', suggestion: 'ana.lima42' });
+    renderPage();
+
+    await user.type(screen.getByLabelText(/^@usuário/i), 'ana.lima');
+    await user.click(await screen.findByRole('button', { name: 'Usar @ana.lima42' }));
+
+    expect(screen.getByLabelText(/^@usuário/i)).toHaveValue('ana.lima42');
+  });
+
+  it('não envia sem @usuário', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await fill(user, { username: '' });
+
+    expect(await screen.findByText(/escolha um @usuário/i)).toBeInTheDocument();
+    expect(signUpWithEmail).not.toHaveBeenCalled();
+  });
+
+  it('não envia um @usuário que a conferência recusou', async () => {
+    const user = userEvent.setup();
+    checkUsername.mockResolvedValue({ available: false, reason: 'reserved', suggestion: null });
+    renderPage();
+
+    await user.type(screen.getByLabelText(/^@usuário/i), 'flyer1');
+    await screen.findAllByText(/é reservado/i);
+    await fill(user, { username: 'flyer1' });
+
+    expect(signUpWithEmail).not.toHaveBeenCalled();
+  });
+
+  it('envia o vulgo quando preenchido', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await fill(user, { nickname: 'Aninha' });
+
+    await waitFor(() =>
+      expect(signUpWithEmail).toHaveBeenCalledWith(expect.objectContaining({ username: 'ana.lima', nickname: 'Aninha' })),
+    );
   });
 
   it('mostra a regra da senha', () => {
@@ -110,6 +174,7 @@ describe('SignupPage', () => {
     await waitFor(() =>
       expect(signUpWithEmail).toHaveBeenCalledWith({
         name: 'Ana Lima',
+        username: 'ana.lima',
         email: 'ana@example.com',
         cpf: '529.982.247-25',
         phone: '(81) 91234-5678',
@@ -125,12 +190,13 @@ describe('SignupPage', () => {
     renderPage();
 
     expect(screen.getByLabelText(/^celular/i)).not.toBeRequired();
-    expect(screen.getByText(/opcional/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^celular/i).closest('div')).toHaveTextContent(/opcional/i);
     await fill(user, { phone: '' });
 
     await waitFor(() =>
       expect(signUpWithEmail).toHaveBeenCalledWith({
         name: 'Ana',
+        username: 'ana.lima',
         email: 'ana@example.com',
         cpf: '529.982.247-25',
         password: 'frevo2026',

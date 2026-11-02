@@ -1,12 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const upload = vi.hoisted(() => vi.fn());
+const from = vi.hoisted(() => vi.fn());
 
 vi.mock('../lib/supabase.ts', () => ({
-  supabase: { storage: { from: () => ({ upload }) } },
+  supabase: { storage: { from } },
 }));
 
-import { MAX_IMAGE_BYTES, MAX_TROPHY_ICON_BYTES, uploadEventMedia, uploadTrophyIcon } from './storage.ts';
+import {
+  MAX_AVATAR_BYTES,
+  MAX_IMAGE_BYTES,
+  MAX_TROPHY_ICON_BYTES,
+  uploadAvatar,
+  uploadEventMedia,
+  uploadTrophyIcon,
+} from './storage.ts';
+
+beforeEach(() => {
+  from.mockReset();
+  from.mockReturnValue({ upload });
+});
 
 describe('uploadEventMedia', () => {
   beforeEach(() => {
@@ -79,6 +92,39 @@ describe('uploadTrophyIcon', () => {
     const big = new File([new Uint8Array(MAX_TROPHY_ICON_BYTES + 1)], 'grande.png', { type: 'image/png' });
 
     await expect(uploadTrophyIcon('user-1', big)).rejects.toThrow(/muito grande/i);
+    expect(upload).not.toHaveBeenCalled();
+  });
+});
+
+describe('uploadAvatar', () => {
+  beforeEach(() => {
+    upload.mockReset();
+  });
+
+  it.each([
+    ['image/webp', 'webp'],
+    ['image/jpeg', 'jpg'],
+    ['image/png', 'png'],
+  ])('envia a foto %s para avatars/{uid}/<uuid>.%s', async (mime, ext) => {
+    upload.mockResolvedValue({ error: null });
+    const photo = new Blob([new Uint8Array([1, 2])], { type: mime });
+
+    const path = await uploadAvatar('user-1', photo);
+
+    expect(from).toHaveBeenCalledWith('avatars');
+    expect(path).toMatch(new RegExp(`^user-1/[0-9a-f]{8}-[0-9a-f-]{27}\\.${ext}$`));
+    expect(upload).toHaveBeenCalledWith(path, photo, { contentType: mime, upsert: false });
+  });
+
+  it('recusa um formato que o bucket não aceita', async () => {
+    await expect(uploadAvatar('user-1', new Blob(['x'], { type: 'image/gif' }))).rejects.toThrow(/JPG, PNG ou WEBP/);
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it('recusa uma foto grande demais', async () => {
+    const big = new Blob([new Uint8Array(MAX_AVATAR_BYTES + 1)], { type: 'image/webp' });
+
+    await expect(uploadAvatar('user-1', big)).rejects.toThrow(/muito grande/i);
     expect(upload).not.toHaveBeenCalled();
   });
 });

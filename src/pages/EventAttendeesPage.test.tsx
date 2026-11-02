@@ -31,7 +31,7 @@ function person(name: string, overrides: Partial<RsvpWithProfile> = {}): RsvpWit
     call_expires_at: null,
     admitted_at: null,
     created_at: null,
-    profile: { id: `user-${name}`, name },
+    profile: { id: `user-${name}`, username: name.toLowerCase(), nickname: name, avatar_url: null },
     ...overrides,
   };
 }
@@ -78,6 +78,29 @@ describe('EventAttendeesPage', () => {
     renderPage();
 
     expect(await screen.findByText(/32 de 50/i)).toBeInTheDocument();
+  });
+
+  it('mostra o vulgo, o @usuário e a foto de quem vai, nunca o nome', async () => {
+    getEventAttendees.mockResolvedValue(
+      list({
+        confirmed: [
+          person('Ana', {
+            status: 'confirmed',
+            profile: { id: 'user-Ana', username: 'ana.lima', nickname: 'Aninha', avatar_url: 'https://storage.example/a.webp' },
+          }),
+          person('Bea', {
+            status: 'confirmed',
+            profile: { id: 'user-Bea', username: 'bea', nickname: null, avatar_url: null },
+          }),
+        ],
+      }),
+    );
+
+    const { container } = renderPage();
+
+    expect(await screen.findByText('Aninha (@ana.lima)')).toBeInTheDocument();
+    expect(screen.getByText('@bea')).toBeInTheDocument();
+    expect(container.querySelector('img[src="https://storage.example/a.webp"]')).not.toBeNull();
   });
 
   it('diz "sem limite" quando o evento não tem lotação', async () => {
