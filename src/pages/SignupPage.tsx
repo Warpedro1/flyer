@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 
 import {
@@ -33,28 +33,40 @@ export default function SignupPage() {
   const [problems, setProblems] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const submitting = useRef(false);
   const check = useUsernameCheck(username);
+  const usernameInput = useRef<HTMLInputElement>(null);
+  const usernameRefused = check !== null && !check.available;
 
   if (user) return <Navigate to="/" replace />;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    // Marcado antes de qualquer espera (e num ref, que dois envios seguidos do mesmo render
+    // já veem): um segundo clique não manda o cadastro duas vezes.
+    if (submitting.current) return;
+    submitting.current = true;
+    setBusy(true);
     setError(null);
     const found: string[] = [];
     if (!username) {
       found.push('Escolha um @usuário.');
     } else {
-      // A conferência ainda não respondeu para o que está escrito: pergunta agora.
+      // A conferência ainda não respondeu para o que está escrito: pergunta agora. "Em uso"
+      // não barra aqui: pode ser um cadastro seu que não foi ativado, e o backend o libera.
       const verdict = check ?? (await checkUsername(username).catch(() => null));
-      const refusal = usernameRefusal(verdict);
+      const refusal = verdict?.reason === 'taken' ? null : usernameRefusal(verdict);
       if (refusal) found.push(refusal);
     }
     found.push(...identityProblems(cpf, phone), ...passwordProblems(password));
     if (password !== confirm) found.push('As senhas não coincidem.');
     setProblems(found);
-    if (found.length > 0) return;
+    if (found.length > 0) {
+      submitting.current = false;
+      setBusy(false);
+      return;
+    }
 
-    setBusy(true);
     const address = email.trim();
     try {
       // Pelo backend: valida e diz se o e-mail, o CPF, o celular ou o @usuário já têm conta.
@@ -71,6 +83,7 @@ export default function SignupPage() {
       saveSignupTicket({ ticket, email: address.toLowerCase() });
     } catch (err) {
       setError(formatApiError(err));
+      submitting.current = false;
       setBusy(false);
       return;
     }
@@ -123,10 +136,20 @@ export default function SignupPage() {
               maxLength={20}
               className={`${authInput} pl-8`}
               value={username}
+              ref={usernameInput}
+              aria-describedby="username-hint"
+              aria-invalid={usernameRefused}
               onChange={(e) => setUsername(normalizeUsername(e.target.value))}
             />
           </div>
-          <UsernameHint check={check} onUse={setUsername} />
+          <UsernameHint
+            id="username-hint"
+            check={check}
+            onUse={(suggestion) => {
+              setUsername(suggestion);
+              usernameInput.current?.focus();
+            }}
+          />
           <p className="mt-1 text-xs text-gray-500">É assim que as pessoas te encontram no Flyer.</p>
         </div>
         <div>

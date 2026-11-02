@@ -20,11 +20,12 @@ const api = vi.hoisted(() => ({
   completeProfileIdentity: vi.fn(),
 }));
 const uploadAvatar = vi.hoisted(() => vi.fn());
+const removeAvatarUpload = vi.hoisted(() => vi.fn());
 const resizeToSquare = vi.hoisted(() => vi.fn());
 const signOut = vi.hoisted(() => vi.fn());
 
 vi.mock('../services/flyerApi.ts', () => api);
-vi.mock('../services/storage.ts', () => ({ uploadAvatar }));
+vi.mock('../services/storage.ts', () => ({ uploadAvatar, removeAvatarUpload }));
 vi.mock('../utils/resizeImage.ts', () => ({ resizeToSquare }));
 vi.mock('../hooks/useAuth.ts', () => ({
   useAuth: () => ({ user: { id: 'user-1', email: 'ana@example.com' }, signOut }),
@@ -42,7 +43,7 @@ const PROFILE: MyProfile = {
   complete: true,
 };
 
-function renderPage(props: { completing?: boolean; onAccountChange?: () => void } = {}) {
+function renderPage(props: { completing?: boolean; onAccountChange?: () => Promise<void> } = {}) {
   return render(
     <MemoryRouter initialEntries={['/profile/me']}>
       <Routes>
@@ -64,6 +65,7 @@ describe('MyDataPage', () => {
     api.getMyProfile.mockResolvedValue(PROFILE);
     api.checkUsername.mockResolvedValue({ available: true, reason: null, suggestion: null });
     uploadAvatar.mockReset();
+    removeAvatarUpload.mockReset().mockResolvedValue(undefined);
     resizeToSquare.mockReset();
     signOut.mockReset().mockResolvedValue(undefined);
   });
@@ -101,10 +103,28 @@ describe('MyDataPage', () => {
     expect(await within(section(/nome completo/i)).findByText(/salvo/i)).toBeInTheDocument();
   });
 
+  it('depois de salvar, o nome salvo é o atual: voltar ao anterior também se salva', async () => {
+    const user = userEvent.setup();
+    api.updateMyName.mockResolvedValue(undefined);
+    renderPage();
+    const name = await screen.findByDisplayValue('Ana Lima');
+    const save = within(section(/nome completo/i)).getByRole('button', { name: /salvar/i });
+
+    await user.clear(name);
+    await user.type(name, 'Ana B');
+    await user.click(save);
+    await within(section(/nome completo/i)).findByText(/salvo/i);
+
+    expect(save).toBeDisabled();
+    await user.clear(name);
+    await user.type(name, 'Ana Lima');
+    expect(save).toBeEnabled();
+  });
+
   describe('@usuário', () => {
     it('confere enquanto digita e salva o novo', async () => {
       const user = userEvent.setup();
-      const onAccountChange = vi.fn();
+      const onAccountChange = vi.fn().mockResolvedValue(undefined);
       renderPage({ onAccountChange });
       const field = await screen.findByDisplayValue('ana.lima');
 
@@ -234,6 +254,28 @@ describe('MyDataPage', () => {
       await waitFor(() => expect(api.updateMyPhone).toHaveBeenCalledWith(null));
     });
 
+    it('o foco segue a tela: vai para o campo ao trocar e volta ao botão ao cancelar', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      await screen.findByText('(81) 9****-5678');
+
+      await user.click(within(section(/celular/i)).getByRole('button', { name: /trocar/i }));
+      expect(screen.getByLabelText(/novo celular/i)).toHaveFocus();
+
+      await user.click(within(section(/celular/i)).getByRole('button', { name: /cancelar/i }));
+      expect(within(section(/celular/i)).getByRole('button', { name: /trocar/i })).toHaveFocus();
+    });
+
+    it('ao pedir para remover, o foco vai para o Cancelar da confirmação', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      await screen.findByText('(81) 9****-5678');
+
+      await user.click(within(section(/celular/i)).getByRole('button', { name: /^remover/i }));
+
+      expect(within(section(/celular/i)).getByRole('button', { name: /cancelar/i })).toHaveFocus();
+    });
+
     it('sem celular, oferece incluir', async () => {
       api.getMyProfile.mockResolvedValue({ ...PROFILE, phone_masked: null });
 
@@ -247,7 +289,7 @@ describe('MyDataPage', () => {
   describe('foto', () => {
     it('reduz, envia, modera e mostra a foto nova', async () => {
       const user = userEvent.setup();
-      const onAccountChange = vi.fn();
+      const onAccountChange = vi.fn().mockResolvedValue(undefined);
       const small = new Blob([new Uint8Array([1])], { type: 'image/webp' });
       resizeToSquare.mockResolvedValue(small);
       uploadAvatar.mockResolvedValue('user-1/abc.webp');
@@ -256,7 +298,7 @@ describe('MyDataPage', () => {
       await screen.findByDisplayValue('ana.lima');
       const file = new File([new Uint8Array([1, 2])], 'eu.jpg', { type: 'image/jpeg' });
 
-      await user.upload(screen.getByLabelText(/escolher foto/i), file);
+      await user.upload(screen.getByLabelText(/enviar foto|trocar foto/i), file);
 
       await waitFor(() => expect(api.setMyAvatar).toHaveBeenCalledWith('user-1/abc.webp'));
       expect(resizeToSquare).toHaveBeenCalledWith(file);
@@ -277,14 +319,43 @@ describe('MyDataPage', () => {
       renderPage();
       await screen.findByDisplayValue('ana.lima');
 
-      await user.upload(screen.getByLabelText(/escolher foto/i), new File(['x'], 'eu.jpg', { type: 'image/jpeg' }));
+      await user.upload(screen.getByLabelText(/enviar foto|trocar foto/i), new File(['x'], 'eu.jpg', { type: 'image/jpeg' }));
 
       expect(await screen.findByText(/foto foi recusada pela moderação/i)).toBeInTheDocument();
     });
 
+    it('apaga a foto enviada quando o backend respondeu que não a usou', async () => {
+      const user = userEvent.setup();
+      resizeToSquare.mockResolvedValue(new Blob([new Uint8Array([1])], { type: 'image/webp' }));
+      uploadAvatar.mockResolvedValue('user-1/abc.webp');
+      api.setMyAvatar.mockRejectedValue(
+        apiResponseError(503, { detail: 'A moderação está indisponível.', code: 'moderation_unavailable' }),
+      );
+      renderPage();
+      await screen.findByDisplayValue('ana.lima');
+
+      await user.upload(screen.getByLabelText(/enviar foto|trocar foto/i), new File(['x'], 'eu.jpg', { type: 'image/jpeg' }));
+
+      await waitFor(() => expect(removeAvatarUpload).toHaveBeenCalledWith('user-1/abc.webp'));
+    });
+
+    it('sem resposta do backend, não apaga: ele pode ter salvado a foto', async () => {
+      const user = userEvent.setup();
+      resizeToSquare.mockResolvedValue(new Blob([new Uint8Array([1])], { type: 'image/webp' }));
+      uploadAvatar.mockResolvedValue('user-1/abc.webp');
+      api.setMyAvatar.mockRejectedValue(new Error('Network Error'));
+      renderPage();
+      await screen.findByDisplayValue('ana.lima');
+
+      await user.upload(screen.getByLabelText(/enviar foto|trocar foto/i), new File(['x'], 'eu.jpg', { type: 'image/jpeg' }));
+
+      expect(await screen.findByRole('alert')).toBeInTheDocument();
+      expect(removeAvatarUpload).not.toHaveBeenCalled();
+    });
+
     it('remove a foto', async () => {
       const user = userEvent.setup();
-      const onAccountChange = vi.fn();
+      const onAccountChange = vi.fn().mockResolvedValue(undefined);
       api.getMyProfile.mockResolvedValue({ ...PROFILE, avatar_url: 'https://storage.example/old.webp' });
       renderPage({ onAccountChange });
 
@@ -300,7 +371,7 @@ describe('MyDataPage', () => {
 
     it('pede o CPF, o celular é opcional, e entra no app', async () => {
       const user = userEvent.setup();
-      const onAccountChange = vi.fn();
+      const onAccountChange = vi.fn().mockResolvedValue(undefined);
       api.getMyProfile.mockResolvedValue(incomplete);
       renderPage({ completing: true, onAccountChange });
 
@@ -324,6 +395,22 @@ describe('MyDataPage', () => {
 
       expect(await screen.findByText(/cpf inválido/i)).toBeInTheDocument();
       expect(api.completeProfileIdentity).not.toHaveBeenCalled();
+    });
+
+    it('sem conseguir carregar os dados, ainda dá para informar o CPF e tentar de novo', async () => {
+      const user = userEvent.setup();
+      api.getMyProfile
+        .mockRejectedValueOnce(apiResponseError(500, { detail: 'Erro interno.', code: 'internal_error' }))
+        .mockResolvedValue(incomplete);
+      renderPage({ completing: true });
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(/erro interno/i);
+      expect(screen.getByLabelText(/^cpf/i)).toBeRequired();
+      await user.click(screen.getByRole('button', { name: /tentar de novo/i }));
+
+      expect(await screen.findByDisplayValue('ana.lima')).toBeInTheDocument();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(screen.getAllByLabelText(/^cpf/i)).toHaveLength(1);
     });
 
     it('deixa usar outra conta', async () => {

@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import type { User } from '@supabase/supabase-js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -40,15 +40,33 @@ const markIntroSeen = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 vi.mock('../../services/flyerApi.ts', () => ({ getEmailCodeStatus, getProfileStatus, markIntroSeen }));
 
 // "Meus dados" tem os seus próprios testes; aqui só importa quando e como aparece.
+// Como a página real: avisa o layout e, quando ele já conferiu a conta, vai ao início.
 vi.mock('../../pages/MyDataPage.tsx', () => ({
-  default: ({ completing, onAccountChange }: { completing?: boolean; onAccountChange?: () => void }) => (
-    <div>
-      <p>{completing ? 'Completar Meus dados' : 'Meus dados'}</p>
-      <button type="button" onClick={onAccountChange}>
-        Salvei
-      </button>
-    </div>
-  ),
+  default: function MyDataPageStub({
+    completing,
+    onAccountChange,
+  }: {
+    completing?: boolean;
+    onAccountChange?: () => Promise<void>;
+  }) {
+    const navigate = useNavigate();
+    return (
+      <div>
+        <p>{completing ? 'Completar Meus dados' : 'Meus dados'}</p>
+        <button
+          type="button"
+          onClick={() => {
+            void (async () => {
+              await onAccountChange?.();
+              navigate('/', { replace: true });
+            })();
+          }}
+        >
+          Salvei
+        </button>
+      </div>
+    );
+  },
 }));
 
 function renderAppWithChild(childText: string) {
@@ -195,7 +213,9 @@ describe('AppLayout — código do login por e-mail', () => {
     renderWithCodeRoute();
     await user.click(await screen.findByRole('button', { name: 'Salvei' }));
 
-    expect(await screen.findByRole('navigation', { name: /navegação principal/i })).toBeInTheDocument();
+    // Já com a conta conferida: o início, não "Meus dados" de novo.
+    expect(await screen.findByText('Início')).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: /navegação principal/i })).toBeInTheDocument();
   });
 
   it('o código vem antes do cadastro', async () => {

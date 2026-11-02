@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -82,6 +82,21 @@ describe('SignupPage', () => {
     await user.click(await screen.findByRole('button', { name: 'Usar @ana.lima42' }));
 
     expect(screen.getByLabelText(/^@usuário/i)).toHaveValue('ana.lima42');
+    // O botão some: o foco volta para o campo.
+    expect(screen.getByLabelText(/^@usuário/i)).toHaveFocus();
+  });
+
+  it('o campo aponta para a conferência e fica inválido quando ela recusa', async () => {
+    const user = userEvent.setup();
+    checkUsername.mockResolvedValue({ available: false, reason: 'reserved', suggestion: null });
+    renderPage();
+
+    const handle = screen.getByLabelText(/^@usuário/i);
+    await user.type(handle, 'flyer1');
+
+    expect(await screen.findByText(/é reservado/i)).toBeInTheDocument();
+    expect(handle).toHaveAttribute('aria-invalid', 'true');
+    expect(handle).toHaveAccessibleDescription(/é reservado/i);
   });
 
   it('não envia sem @usuário', async () => {
@@ -104,6 +119,34 @@ describe('SignupPage', () => {
     await fill(user, { username: 'flyer1' });
 
     expect(signUpWithEmail).not.toHaveBeenCalled();
+  });
+
+  it('um @usuário "em uso" ainda vai ao backend, que libera o cadastro não ativado da própria pessoa', async () => {
+    const user = userEvent.setup();
+    checkUsername.mockResolvedValue({ available: false, reason: 'taken', suggestion: 'ana.lima42' });
+    renderPage();
+
+    await fill(user);
+
+    await waitFor(() => expect(signUpWithEmail).toHaveBeenCalledWith(expect.objectContaining({ username: 'ana.lima' })));
+  });
+
+  it('dois cliques seguidos criam a conta uma vez só', async () => {
+    const user = userEvent.setup();
+    let finish: (value: { ticket: string }) => void = () => undefined;
+    signUpWithEmail.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    renderPage();
+
+    await fill(user, { username: 'ana.lima' });
+    // Dois envios no mesmo instante, antes de o botão desabilitar.
+    const form = screen.getByRole('button', { name: /criando|criar conta/i }).closest('form');
+    if (!form) throw new Error('sem formulário');
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+    finish({ ticket: 't'.repeat(43) });
+
+    expect(await screen.findByText('Tela do código do cadastro')).toBeInTheDocument();
+    expect(signUpWithEmail).toHaveBeenCalledTimes(1);
   });
 
   it('envia o vulgo quando preenchido', async () => {

@@ -14,6 +14,7 @@ import { formatApiError, isNotFoundError } from '../utils/apiError.ts';
 import { NotFoundContent } from '../components/errors/NotFound.tsx';
 import { BackButton } from '../components/navigation/BackButton.tsx';
 import { Avatar } from '../components/ui/Avatar.tsx';
+import { PublicIdentity } from '../components/ui/PublicIdentity.tsx';
 import { avatarLabel, publicName } from '../utils/publicName.ts';
 
 /**
@@ -40,10 +41,10 @@ function CalledRow({
       <div className="flex items-center justify-between gap-3">
         <span className="flex min-w-0 items-center gap-3 font-medium text-red-900">
           <Avatar url={entry.profile.avatar_url} label={avatarLabel(entry.profile)} className="h-9 w-9 text-xs" />
-          <span className="truncate">{name}</span>
+          <PublicIdentity profile={entry.profile} fallback="Sem nome" />
         </span>
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-sm font-bold text-red-700">
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="whitespace-nowrap font-mono text-sm font-bold text-red-700">
             {countdown.expired ? 'prazo esgotado' : countdown.label}
           </span>
           {!confirming && (
@@ -52,7 +53,7 @@ function CalledRow({
               onClick={() => setConfirming(true)}
               disabled={busy}
               aria-label={`Pular a vez de ${name}`}
-              className="rounded-xl border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-700 transition hover:border-red-400 disabled:opacity-50"
+              className="whitespace-nowrap rounded-xl border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-700 transition hover:border-red-400 disabled:opacity-50"
             >
               Pular a vez
             </button>
@@ -100,12 +101,12 @@ function PersonRow({
     <li className="flex items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
       <span className="flex min-w-0 items-center gap-3 text-gray-900">
         {entry.waitlist_position !== null && (
-          <span className="font-mono text-xs text-gray-500">#{entry.waitlist_position}</span>
+          <span className="shrink-0 font-mono text-xs text-gray-500">#{entry.waitlist_position}</span>
         )}
         <Avatar url={entry.profile.avatar_url} label={avatarLabel(entry.profile)} className="h-9 w-9 text-xs" />
-        <span className="truncate">{publicName(entry.profile, 'Sem nome')}</span>
+        <PublicIdentity profile={entry.profile} fallback="Sem nome" />
       </span>
-      {action}
+      {action && <div className="shrink-0">{action}</div>}
     </li>
   );
 }

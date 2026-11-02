@@ -60,8 +60,8 @@ export default function ProfilePage() {
           label={title}
           className="h-28 w-28 border-4 border-white text-4xl shadow-xl ring-4 ring-red-100"
         />
-        <h1 className="mt-4 text-2xl font-bold text-gray-900">{title}</h1>
-        {me?.nickname && handle && <p className="text-sm text-gray-500">{handle}</p>}
+        <h1 className="mt-4 max-w-full text-2xl font-bold text-gray-900 [overflow-wrap:anywhere]">{title}</h1>
+        {me?.nickname && handle && <p className="max-w-full text-sm text-gray-500 [overflow-wrap:anywhere]">{handle}</p>}
         <span className="mt-3 inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
           Plano Flyer
         </span>

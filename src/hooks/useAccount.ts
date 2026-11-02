@@ -10,10 +10,10 @@ export interface AccountSummary {
 export interface AccountContext {
   account: AccountSummary | null;
   /** Confere de novo a conta (depois de trocar a foto, o @usuário ou completar o CPF). */
-  refreshAccount: () => void;
+  refreshAccount: () => Promise<void>;
 }
 
-const OUTSIDE_LAYOUT: AccountContext = { account: null, refreshAccount: () => undefined };
+const OUTSIDE_LAYOUT: AccountContext = { account: null, refreshAccount: async () => undefined };
 
 /** A conta conferida pelo layout; fora dele (testes, telas soltas), nada a atualizar. */
 export function useAccount(): AccountContext {

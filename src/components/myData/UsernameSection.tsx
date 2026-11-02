@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useId, useRef, useState } from 'react';
 
 import { useUsernameCheck } from '../../hooks/useUsernameCheck.ts';
 import { updateMyUsername } from '../../services/flyerApi.ts';
@@ -26,6 +26,8 @@ export function UsernameSection({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const check = useUsernameCheck(draft, current);
+  const hintId = useId();
+  const input = useRef<HTMLInputElement>(null);
   const locked = availableAt !== null;
   const changed = draft !== current && draft.length > 0;
   // Sem resposta da conferência, quem decide é o backend; uma recusa conhecida trava o botão.
@@ -67,6 +69,9 @@ export function UsernameSection({
             autoCapitalize="none"
             spellCheck={false}
             disabled={locked}
+            ref={input}
+            aria-describedby={hintId}
+            aria-invalid={refused}
             onChange={(e) => {
               setDraft(normalizeUsername(e.target.value));
               setSaved(false);
@@ -80,7 +85,15 @@ export function UsernameSection({
       {locked && availableAt && (
         <p className="mt-2 text-sm text-gray-600">Você poderá trocar de novo em {localDate(availableAt)}.</p>
       )}
-      {!locked && changed && <UsernameHint check={check} onUse={setDraft} />}
+      <UsernameHint
+        id={hintId}
+        check={!locked && changed ? check : null}
+        onUse={(suggestion) => {
+          setDraft(suggestion);
+          // O botão some com a troca: o foco volta para o campo, não para o começo da página.
+          input.current?.focus();
+        }}
+      />
       <SaveMessage error={error} saved={saved} />
     </DataSection>
   );

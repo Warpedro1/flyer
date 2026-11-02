@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 
 import { updateMyPhone } from '../../services/flyerApi.ts';
 import { formatApiError } from '../../utils/apiError.ts';
@@ -13,6 +13,23 @@ export function PhoneSection({ masked, onSaved }: { masked: string | null; onSav
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  // Quando o formulário ou a confirmação somem, o foco volta para "Trocar"/"Incluir"
+  // (senão vai para o começo da página).
+  const changeButton = useRef<HTMLButtonElement>(null);
+  const restoreFocus = useRef(false);
+
+  useEffect(() => {
+    if (!editing && !confirmingRemoval && restoreFocus.current) {
+      restoreFocus.current = false;
+      changeButton.current?.focus();
+    }
+  }, [editing, confirmingRemoval]);
+
+  const close = () => {
+    restoreFocus.current = true;
+    setEditing(false);
+    setConfirmingRemoval(false);
+  };
 
   const send = async (value: string | null) => {
     setBusy(true);
@@ -21,8 +38,7 @@ export function PhoneSection({ masked, onSaved }: { masked: string | null; onSav
     try {
       await updateMyPhone(value);
       setSaved(true);
-      setEditing(false);
-      setConfirmingRemoval(false);
+      close();
       setPhone('');
       onSaved();
     } catch (err) {
@@ -49,6 +65,7 @@ export function PhoneSection({ masked, onSaved }: { masked: string | null; onSav
           <div className="flex gap-2">
             <button
               type="button"
+              ref={changeButton}
               onClick={() => {
                 setEditing(true);
                 setSaved(false);
@@ -70,7 +87,8 @@ export function PhoneSection({ masked, onSaved }: { masked: string | null; onSav
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-gray-50 p-3 text-sm text-gray-700">
           <span>Remover o celular da sua conta?</span>
           <div className="flex gap-2">
-            <button type="button" onClick={() => setConfirmingRemoval(false)} className={dataSecondaryButton}>
+            {/* O foco vai para a opção que não apaga nada. */}
+            <button type="button" autoFocus onClick={close} className={dataSecondaryButton}>
               Cancelar
             </button>
             <button type="button" disabled={busy} onClick={() => void send(null)} className={dataPrimaryButton}>
@@ -90,6 +108,7 @@ export function PhoneSection({ masked, onSaved }: { masked: string | null; onSav
             inputMode="numeric"
             autoComplete="tel-national"
             placeholder="(81) 91234-5678"
+            autoFocus
             className={dataInput}
             value={phone}
             onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
@@ -97,7 +116,7 @@ export function PhoneSection({ masked, onSaved }: { masked: string | null; onSav
           <button type="submit" disabled={busy} className={dataPrimaryButton}>
             {busy ? 'Salvando…' : 'Salvar'}
           </button>
-          <button type="button" onClick={() => setEditing(false)} className={dataSecondaryButton}>
+          <button type="button" onClick={close} className={dataSecondaryButton}>
             Cancelar
           </button>
         </form>

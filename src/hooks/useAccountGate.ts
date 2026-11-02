@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { getEmailCodeStatus, getProfileStatus } from '../services/flyerApi.ts';
+import { type ProfileStatus, getEmailCodeStatus, getProfileStatus } from '../services/flyerApi.ts';
 import { sessionNeedsEmailCode } from '../utils/sessionMethods.ts';
 import type { AccountSummary } from './useAccount.ts';
 
@@ -18,8 +18,12 @@ export interface AccountGateState {
   intro: IntroState | null;
   /** O @usuário e a foto da própria pessoa, para o menu; null até a conta ser conferida. */
   account: AccountSummary | null;
-  /** Confere de novo, sem voltar à tela de espera (depois de completar o CPF ou trocar a foto). */
-  recheck: () => void;
+  /**
+   * Confere de novo, sem voltar à tela de espera (depois de completar o CPF ou trocar a
+   * foto). Termina quando o novo estado já foi aplicado: quem navega depois disso já
+   * encontra o layout certo.
+   */
+  recheck: () => Promise<void>;
 }
 
 /**
@@ -34,10 +38,30 @@ export function useAccountGate(accessToken: string | undefined, userId: string |
   const [gate, setGate] = useState<AccountGate>(userId ? 'checking' : 'ok');
   const [intro, setIntro] = useState<IntroState | null>(null);
   const [account, setAccount] = useState<AccountSummary | null>(null);
-  const [version, setVersion] = useState(0);
   // De quem é a conta já conferida: outra conta (ou a primeira vez) mostra a espera.
   const checkedUser = useRef<string | undefined>(undefined);
-  const recheck = useCallback(() => setVersion((v) => v + 1), []);
+
+  /** O que o status diz da conta: o @usuário e a foto, a introdução, e o que ainda falta. */
+  const applyStatus = useCallback((profile: ProfileStatus): AccountGate => {
+    setAccount({ username: profile.username ?? null, avatarUrl: profile.avatar_url ?? null });
+    // O status já diz se a introdução foi vista: o tour não custa um pedido a mais.
+    if (typeof profile.intro_seen === 'boolean') {
+      setIntro({ seen: profile.intro_seen, onboarded: profile.onboarded === true });
+    }
+    if (profile.pending) return 'needs_signup_code';
+    return profile.complete ? 'ok' : 'needs_profile';
+  }, []);
+
+  const recheck = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const next = applyStatus(await getProfileStatus());
+      // O código do e-mail, se ainda falta, continua a vir antes de tudo.
+      setGate((current) => (current === 'needs_code' ? current : next));
+    } catch {
+      // Sem resposta, fica como está; o backend continua a recusar o que faltar.
+    }
+  }, [userId, applyStatus]);
 
   useEffect(() => {
     if (!userId) {
@@ -52,16 +76,10 @@ export function useAccountGate(accessToken: string | undefined, userId: string |
         if (code.required && !code.verified) return 'needs_code' as const;
       }
       const profile = await getProfileStatus();
-      if (!cancelled) setAccount({ username: profile.username ?? null, avatarUrl: profile.avatar_url ?? null });
-      // O status já diz se a introdução foi vista: o tour não custa um pedido a mais.
-      if (!cancelled && typeof profile.intro_seen === 'boolean') {
-        setIntro({ seen: profile.intro_seen, onboarded: profile.onboarded === true });
-      }
-      if (profile.pending) return 'needs_signup_code' as const;
-      return profile.complete ? ('ok' as const) : ('needs_profile' as const);
+      return cancelled ? null : applyStatus(profile);
     })()
       .then((next) => {
-        if (cancelled) return;
+        if (cancelled || next === null) return;
         checkedUser.current = userId;
         setGate(next);
       })
@@ -75,7 +93,7 @@ export function useAccountGate(accessToken: string | undefined, userId: string |
       cancelled = true;
     };
     // O token renova-se de hora a hora; a sessão e a conta são as mesmas.
-  }, [needsCode, userId, version]);
+  }, [needsCode, userId, applyStatus]);
 
   return { gate, intro, account, recheck };
 }

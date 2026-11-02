@@ -94,6 +94,7 @@ const AVATAR_EXTENSIONS: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
 };
+const AVATAR_BUCKET = 'avatars';
 /** O bucket aceita até 2 MB; a foto já reduzida para 512×512 fica bem abaixo disso. */
 export const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
@@ -110,10 +111,24 @@ export async function uploadAvatar(userId: string, photo: Blob): Promise<string>
     throw new Error('Foto muito grande. Limite de 2 MB.');
   }
   const path = `${userId}/${crypto.randomUUID()}.${extension}`;
-  const { error } = await supabase.storage.from('avatars').upload(path, photo, {
+  const { error } = await supabase.storage.from(AVATAR_BUCKET).upload(path, photo, {
     contentType: photo.type,
     upsert: false,
   });
-  if (error) throw error;
+  // A mensagem do Storage vem em inglês; a pessoa vê esta.
+  if (error) throw new Error('Não foi possível enviar a foto. Verifique sua conexão e tente de novo.');
   return path;
+}
+
+/**
+ * Apaga uma foto enviada que não chegou a ser usada (o backend não a aceitou ou não
+ * respondeu). Melhor esforço: o bucket só deixa apagar na própria pasta, e uma falha
+ * deixa só um arquivo órfão.
+ */
+export async function removeAvatarUpload(path: string): Promise<void> {
+  try {
+    await supabase.storage.from(AVATAR_BUCKET).remove([path]);
+  } catch {
+    // Sem conexão: fica o arquivo, que ninguém vê.
+  }
 }

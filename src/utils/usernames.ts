@@ -2,7 +2,7 @@ import type { UsernameAvailability } from '../types/index.ts';
 
 /** A mesma regra do backend (`core/usernames.py`, Warpedro1/flyer-back#32), dita por extenso. */
 export const USERNAME_RULE =
-  'Use de 3 a 20 letras minúsculas sem acento, números (até 7 no total), ponto ou _, com pelo menos uma letra e sem ponto no começo, no fim ou repetido.';
+  'Use de 3 a 20 caracteres: letras minúsculas sem acento, números (até 7 no total), ponto ou _, com pelo menos uma letra e sem ponto no começo, no fim ou repetido.';
 
 /** Como o backend guarda o que se digita: sem espaços, sem o @ do começo, em minúsculas. */
 export function normalizeUsername(value: string): string {

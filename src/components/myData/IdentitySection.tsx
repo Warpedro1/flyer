@@ -9,7 +9,7 @@ import { DataSection, dataInput, dataPrimaryButton } from './DataSection.tsx';
  * CPF (obrigatório) e celular (opcional) de uma conta que ainda não os tem: contas Google
  * no 1.º acesso (decisões 2026-10-12, Warpedro1/flyer-back#29). O CPF não muda depois.
  */
-export function IdentitySection({ onCompleted }: { onCompleted: () => void }) {
+export function IdentitySection({ onCompleted }: { onCompleted: () => Promise<void> }) {
   const [cpf, setCpf] = useState('');
   const [phone, setPhone] = useState('');
   const [problems, setProblems] = useState<string[]>([]);
@@ -25,7 +25,7 @@ export function IdentitySection({ onCompleted }: { onCompleted: () => void }) {
     setBusy(true);
     try {
       await completeProfileIdentity({ cpf, ...(phone.trim() ? { phone } : {}) });
-      onCompleted();
+      await onCompleted();
     } catch (err) {
       setError(formatApiError(err));
       setBusy(false);

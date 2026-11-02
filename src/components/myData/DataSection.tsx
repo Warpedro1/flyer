@@ -21,21 +21,20 @@ export const dataPrimaryButton =
 export const dataSecondaryButton =
   'rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50';
 
-/** O resultado de salvar: erro (anunciado) ou "Salvo." */
+/**
+ * O resultado de salvar: erro ou "Salvo.". A região fica sempre na tela, mesmo vazia,
+ * para o leitor de tela anunciar o que aparece nela.
+ */
 export function SaveMessage({ error, saved }: { error: string | null; saved: boolean }) {
-  if (error) {
-    return (
-      <p role="alert" className="mt-2 text-sm text-red-700">
-        {error}
-      </p>
-    );
-  }
-  if (saved) {
-    return (
-      <p role="status" className="mt-2 text-sm text-green-700">
-        Salvo.
-      </p>
-    );
-  }
-  return null;
+  return (
+    <div aria-live="polite" className="text-sm">
+      {error ? (
+        <p role="alert" className="mt-2 text-red-700">
+          {error}
+        </p>
+      ) : (
+        saved && <p className="mt-2 text-green-700">Salvo.</p>
+      )}
+    </div>
+  );
 }

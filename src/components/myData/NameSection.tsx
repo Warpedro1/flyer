@@ -7,6 +7,8 @@ import { DataSection, SaveMessage, dataInput, dataPrimaryButton } from './DataSe
 /** O nome completo: só a própria pessoa vê (decisão 2026-11-01). */
 export function NameSection({ current }: { current: string | null }) {
   const [name, setName] = useState(current ?? '');
+  // O que está salvo agora (a tela não recarrega o perfil depois de salvar o nome).
+  const [savedName, setSavedName] = useState(current);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -19,6 +21,7 @@ export function NameSection({ current }: { current: string | null }) {
     setSaved(false);
     try {
       await updateMyName(trimmed);
+      setSavedName(trimmed);
       setSaved(true);
     } catch (err) {
       setError(formatApiError(err));
@@ -44,7 +47,7 @@ export function NameSection({ current }: { current: string | null }) {
             setSaved(false);
           }}
         />
-        <button type="submit" disabled={busy || !trimmed || trimmed === current} className={dataPrimaryButton}>
+        <button type="submit" disabled={busy || !trimmed || trimmed === savedName} className={dataPrimaryButton}>
           {busy ? 'Salvando…' : 'Salvar'}
         </button>
       </form>

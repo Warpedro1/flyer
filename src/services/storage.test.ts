@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const upload = vi.hoisted(() => vi.fn());
+const remove = vi.hoisted(() => vi.fn());
 const from = vi.hoisted(() => vi.fn());
 
 vi.mock('../lib/supabase.ts', () => ({
@@ -11,6 +12,7 @@ import {
   MAX_AVATAR_BYTES,
   MAX_IMAGE_BYTES,
   MAX_TROPHY_ICON_BYTES,
+  removeAvatarUpload,
   uploadAvatar,
   uploadEventMedia,
   uploadTrophyIcon,
@@ -18,7 +20,7 @@ import {
 
 beforeEach(() => {
   from.mockReset();
-  from.mockReturnValue({ upload });
+  from.mockReturnValue({ upload, remove });
 });
 
 describe('uploadEventMedia', () => {
@@ -126,5 +128,33 @@ describe('uploadAvatar', () => {
 
     await expect(uploadAvatar('user-1', big)).rejects.toThrow(/muito grande/i);
     expect(upload).not.toHaveBeenCalled();
+  });
+  it('uma falha do Storage vira uma mensagem em português', async () => {
+    upload.mockResolvedValue({ error: new Error('The resource already exists') });
+
+    await expect(uploadAvatar('user-1', new Blob(['x'], { type: 'image/webp' }))).rejects.toThrow(
+      'Não foi possível enviar a foto. Verifique sua conexão e tente de novo.',
+    );
+  });
+});
+
+describe('removeAvatarUpload', () => {
+  beforeEach(() => {
+    remove.mockReset();
+  });
+
+  it('apaga a foto enviada do bucket avatars', async () => {
+    remove.mockResolvedValue({ error: null });
+
+    await removeAvatarUpload('user-1/abc.webp');
+
+    expect(from).toHaveBeenCalledWith('avatars');
+    expect(remove).toHaveBeenCalledWith(['user-1/abc.webp']);
+  });
+
+  it('é melhor esforço: uma falha não sobe', async () => {
+    remove.mockRejectedValue(new Error('offline'));
+
+    await expect(removeAvatarUpload('user-1/abc.webp')).resolves.toBeUndefined();
   });
 });

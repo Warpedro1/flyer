@@ -98,7 +98,8 @@ describe('EventAttendeesPage', () => {
 
     const { container } = renderPage();
 
-    expect(await screen.findByText('Aninha (@ana.lima)')).toBeInTheDocument();
+    expect(await screen.findByText('Aninha')).toBeInTheDocument();
+    expect(screen.getByText('@ana.lima')).toBeInTheDocument();
     expect(screen.getByText('@bea')).toBeInTheDocument();
     expect(container.querySelector('img[src="https://storage.example/a.webp"]')).not.toBeNull();
   });

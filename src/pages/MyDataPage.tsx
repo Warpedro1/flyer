@@ -20,7 +20,7 @@ interface MyDataPageProps {
   /** Conta sem CPF: o layout mostra só esta tela, para completar o cadastro. */
   completing?: boolean;
   /** Avisa o layout que a conta mudou (CPF, foto, @usuário); sem isso, usa o do `<Outlet>`. */
-  onAccountChange?: () => void;
+  onAccountChange?: () => Promise<void>;
 }
 
 /**
@@ -62,7 +62,13 @@ export default function MyDataPage({ completing = false, onAccountChange }: MyDa
   // Mudou o que aparece no menu (foto ou @usuário): o layout confere de novo.
   const afterPublicChange = () => {
     void reload();
-    notifyAccount();
+    void notifyAccount();
+  };
+
+  // Só depois de o layout saber que o CPF existe: senão ele volta para cá.
+  const finishProfile = async () => {
+    await notifyAccount();
+    void navigate('/', { replace: true });
   };
 
   const handleOtherAccount = async () => {
@@ -84,10 +90,20 @@ export default function MyDataPage({ completing = false, onAccountChange }: MyDa
       </header>
 
       {error && (
-        <p role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800">
-          {error}
-        </p>
+        <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800">
+          <p>{error}</p>
+          <button
+            type="button"
+            onClick={() => void reload()}
+            className="mt-2 text-sm font-semibold text-red-700 underline-offset-2 hover:underline"
+          >
+            Tentar de novo
+          </button>
+        </div>
       )}
+
+      {/* Sem os dados, quem está completando o cadastro ainda pode informar o CPF. */}
+      {completing && !profile && error && <IdentitySection onCompleted={finishProfile} />}
 
       {!profile && !error && (
         <div className="flex justify-center py-8">
@@ -101,21 +117,14 @@ export default function MyDataPage({ completing = false, onAccountChange }: MyDa
 
       {profile && (
         <>
-          {!profile.complete && (
-            <IdentitySection
-              onCompleted={() => {
-                notifyAccount();
-                void navigate('/', { replace: true });
-              }}
-            />
-          )}
+          {!profile.complete && <IdentitySection onCompleted={finishProfile} />}
           <PhotoSection
             userId={user?.id ?? ''}
             avatarUrl={profile.avatar_url}
             label={avatarLabel(profile)}
             onChanged={(avatarUrl) => {
               setProfile((p) => (p ? { ...p, avatar_url: avatarUrl } : p));
-              notifyAccount();
+              void notifyAccount();
             }}
           />
           <UsernameSection

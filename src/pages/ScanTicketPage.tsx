@@ -298,7 +298,7 @@ export default function ScanTicketPage() {
                   label={avatarLabel(phase.result.attendee)}
                   className="h-20 w-20 border-4 border-white text-2xl"
                 />
-                <p className="text-2xl font-bold">{publicName(phase.result.attendee)}</p>
+                <p className="max-w-full break-words text-2xl font-bold [overflow-wrap:anywhere]">{publicName(phase.result.attendee)}</p>
                 <p className="text-lg font-semibold">Check-in feito</p>
                 {phase.result.trophy && (
                   <p className="flex items-center gap-2 rounded-2xl bg-white/20 px-3 py-1 text-sm">
